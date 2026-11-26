@@ -254,8 +254,8 @@ int main(int argc, char** argv) {
         cerr << "Uso: " << argv[0] << " [arquivo_treino arquivo_teste]\n";
         return 1;
     }
-    const string arquivo_treino = argc == 3 ? argv[1] : "optdigits.tra";
-    const string arquivo_teste = argc == 3 ? argv[2] : "optdigits.tes";
+    const string arquivo_treino = argc == 3 ? argv[1] : "data/optdigits.tra";
+    const string arquivo_teste = argc == 3 ? argv[2] : "data/optdigits.tes";
 
     try {
         const auto treino = Barenn::ler_dados(arquivo_treino);
