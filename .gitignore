@@ -1,0 +1,5 @@
+# binarios e dumps pesados do profiling (os .txt de resumo ficam versionados)
+profiling/**/barenn
+profiling/**/barenn_g
+profiling/**/callgrind.out*
+slurm/*.out

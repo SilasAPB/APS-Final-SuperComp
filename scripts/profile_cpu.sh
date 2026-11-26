@@ -1,0 +1,36 @@
+#!/usr/bin/env bash
+# Uso: scripts/profile_cpu.sh [FONTE] [ROTULO] [REPS]
+# Saidas em profiling/<ROTULO>/<host>/
+set -euo pipefail
+cd "$(dirname "${BASH_SOURCE[0]}")/.."   # o programa usa caminhos relativos (data/...)
+
+SRC="${1:-legacy/v0.1-baseline/barenn.cpp}"
+LABEL="${2:-v0.1-baseline}"
+REPS="${3:-10}"
+OUT="profiling/$LABEL/$(hostname -s)"
+mkdir -p "$OUT"
+
+# ambiente
+{ date -Is; git describe --tags --always --dirty; g++ --version | head -1
+  valgrind --version; echo "flags: -O2 -std=c++17"; echo "fonte: $SRC"
+  lscpu | grep -E 'Model name|^CPU\(s\)|L1d|L2|L3'; } > "$OUT/ambiente.txt" 2>&1
+
+# compilacao (-g so para dar nomes ao callgrind)
+g++ -O2 -std=c++17    "$SRC" -o "$OUT/barenn"
+g++ -O2 -std=c++17 -g "$SRC" -o "$OUT/barenn_g"
+
+# saida de referencia (para diff nas proximas versoes) + tempos; ultima linha = resumo
+"$OUT/barenn" | grep -v '^Tempo de treino' > "$OUT/saida.txt"
+for _ in $(seq "$REPS"); do "$OUT/barenn" | awk '/^Tempo de treino/ {print $4}'; done > "$OUT/tempos.txt"
+awk '{s+=$1; ss+=$1*$1} END{m=s/NR; printf "media=%.4f desvio=%.4f n=%d\n", m, sqrt(ss/NR-m*m), NR}' \
+  "$OUT/tempos.txt" >> "$OUT/tempos.txt"
+cat "$OUT/tempos.txt"
+
+# valgrind e callgrind
+valgrind --leak-check=full "$OUT/barenn_g" > /dev/null 2> "$OUT/memcheck.txt" || true
+valgrind --tool=callgrind --cache-sim=yes --callgrind-out-file="$OUT/callgrind.out" \
+  "$OUT/barenn_g" > /dev/null 2> /dev/null
+callgrind_annotate "$OUT/callgrind.out" > "$OUT/callgrind_annotate.txt"
+
+tail -n 1 "$OUT/memcheck.txt"
+cat "$OUT/callgrind_annotate.txt"
