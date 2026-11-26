@@ -1,9 +1,9 @@
+2026-11-26T11:20:52-03:00
 no: sdumont6039
-2026-11-26T10:05:28-03:00
-9f98fe3
-g++ (GCC) 8.5.0 20210514 (Red Hat 8.5.0-18)
+50ab41e-dirty
+g++ (GCC) 15.2.0
 valgrind-3.19.0
-flags: -O2 -std=c++17 -lstdc++fs
+flags: -O2 -std=c++17 
 fonte: legacy/v0.1-baseline/barenn.cpp
 CPU(s):              48
 Model name:          Intel(R) Xeon(R) Gold 6252 CPU @ 2.10GHz

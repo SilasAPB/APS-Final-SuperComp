@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/bash -l
 #SBATCH --job-name=barenn-cpu
 #SBATCH --partition=sequana_cpu_dev        
 #SBATCH --nodes=1
