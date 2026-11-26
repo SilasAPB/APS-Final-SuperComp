@@ -1,12 +1,12 @@
-2026-11-26T10:00:51-03:00
-09a3b3e-dirty
+2026-11-26T10:44:41-03:00
+c43d7f8-dirty
 g++ (Ubuntu 15.2.0-16ubuntu1) 15.2.0
 valgrind-3.26.0
 flags: -O2 -std=c++17 
 fonte: legacy/v0.1-baseline/barenn.cpp
 CPU(s):                                  16
 Model name:                              13th Gen Intel(R) Core(TM) i5-13450HX
-CPU(s) scaling MHz:                      37%
+CPU(s) scaling MHz:                      49%
 L1d cache:                               416 KiB (10 instances)
 L2 cache:                                9.5 MiB (7 instances)
 L3 cache:                                20 MiB (1 instance)
