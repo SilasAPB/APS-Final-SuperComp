@@ -10,14 +10,18 @@ REPS="${3:-10}"
 OUT="profiling/$LABEL/$(hostname -s)"
 mkdir -p "$OUT"
 
+# gcc < 9 (ex.: padrao do SD) precisa de -lstdc++fs para std::filesystem
+LIBS=""
+[ "$(g++ -dumpversion | cut -d. -f1)" -lt 9 ] && LIBS="-lstdc++fs"
+
 # ambiente
 { date -Is; git describe --tags --always --dirty; g++ --version | head -1
-  valgrind --version; echo "flags: -O2 -std=c++17"; echo "fonte: $SRC"
+  valgrind --version; echo "flags: -O2 -std=c++17 $LIBS"; echo "fonte: $SRC"
   lscpu | grep -E 'Model name|^CPU\(s\)|L1d|L2|L3'; } > "$OUT/ambiente.txt" 2>&1
 
 # compilacao (-g so para dar nomes ao callgrind)
-g++ -O2 -std=c++17    "$SRC" -o "$OUT/barenn"
-g++ -O2 -std=c++17 -g "$SRC" -o "$OUT/barenn_g"
+g++ -O2 -std=c++17    "$SRC" -o "$OUT/barenn"   $LIBS
+g++ -O2 -std=c++17 -g "$SRC" -o "$OUT/barenn_g" $LIBS
 
 # saida de referencia (para diff nas proximas versoes) + tempos; ultima linha = resumo
 "$OUT/barenn" | grep -v '^Tempo de treino' > "$OUT/saida.txt"
