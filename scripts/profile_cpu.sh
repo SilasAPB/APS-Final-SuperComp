@@ -7,7 +7,9 @@ cd "$(dirname "${BASH_SOURCE[0]}")/.."   # o programa usa caminhos relativos (da
 SRC="${1:-legacy/v0.1-baseline/barenn.cpp}"
 LABEL="${2:-v0.1-baseline}"
 REPS="${3:-10}"
-OUT="profiling/$LABEL/$(hostname -s)"
+NODE="$(hostname -s)"
+case "$NODE" in sdumont*) ENV_NAME="sdumont" ;; *) ENV_NAME="$NODE" ;; esac  # no do SD muda a cada job
+OUT="profiling/$LABEL/$ENV_NAME"
 mkdir -p "$OUT"
 
 # gcc < 9 (ex.: padrao do SD) precisa de -lstdc++fs para std::filesystem
@@ -15,7 +17,7 @@ LIBS=""
 [ "$(g++ -dumpversion | cut -d. -f1)" -lt 9 ] && LIBS="-lstdc++fs"
 
 # ambiente
-{ date -Is; git describe --tags --always --dirty; g++ --version | head -1
+{ date -Is; echo "no: $NODE"; git describe --tags --always --dirty; g++ --version | head -1
   valgrind --version; echo "flags: -O2 -std=c++17 $LIBS"; echo "fonte: $SRC"
   lscpu | grep -E 'Model name|^CPU\(s\)|L1d|L2|L3'; } > "$OUT/ambiente.txt" 2>&1
 

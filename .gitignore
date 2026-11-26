@@ -1,7 +1,7 @@
 # binarios e dumps pesados do profiling (os .txt de resumo ficam versionados)
 profiling/**/barenn
 profiling/**/barenn_g
-slurm/*.out
+slurm/**/*.out
 
 # rascunhos locais das Issues (o texto oficial vai para o GitHub)
 issues/
