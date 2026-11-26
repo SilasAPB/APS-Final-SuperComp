@@ -1,0 +1,6 @@
+A=profiling/v0.1-baseline/borg/barenn
+B=profiling/v1.1-vetores-por-referencia/borg/barenn
+reps=20 pin=4 data=2026-11-26T19:57:29-03:00 no=borg
+A: media=0.4935 desvio=0.0181 mediana=0.4877 min=0.4760 max=0.5547 n=20
+B: media=0.4808 desvio=0.0085 mediana=0.4804 min=0.4672 max=0.4979 n=20
+speedup (mediana A/B) = 1.015x   (minimo A/B) = 1.019x

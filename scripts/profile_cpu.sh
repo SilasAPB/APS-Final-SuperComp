@@ -36,7 +36,10 @@ cat "$OUT/tempos.txt"
 valgrind --leak-check=full "$OUT/barenn_g" > /dev/null 2> "$OUT/memcheck.txt" || true
 valgrind --tool=callgrind --cache-sim=yes --callgrind-out-file="$OUT/callgrind.out" \
   "$OUT/barenn_g" > /dev/null 2> /dev/null
-callgrind_annotate "$OUT/callgrind.out" > "$OUT/callgrind_annotate.txt"
+# legivel: so instrucoes (Ir) + codigo-fonte anotado linha a linha
+callgrind_annotate --show=Ir "$OUT/callgrind.out" "$SRC" > "$OUT/callgrind_annotate.txt"
+# completo: Ir + acessos e misses de cache (D1/LL)
+callgrind_annotate "$OUT/callgrind.out" "$SRC" > "$OUT/callgrind_annotate_cache.txt"
 
 tail -n 1 "$OUT/memcheck.txt"
 cat "$OUT/callgrind_annotate.txt"
