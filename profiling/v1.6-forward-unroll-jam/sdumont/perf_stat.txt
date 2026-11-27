@@ -1,0 +1,11 @@
+no=sdumont6169 reps=5
+
+ Performance counter stats for 'profiling/v1.6-forward-unroll-jam/sdumont/barenn' (5 runs):
+
+     1,971,421,912      cycles                                                        ( +-  0.10% )
+     5,698,388,709      instructions              #    2.89  insn per cycle           ( +-  0.00% )
+         8,389,997      branch-misses                                                 ( +-  0.37% )
+         1,287,410      L1-dcache-load-misses                                         ( +-  0.11% )
+
+          0.551585 +- 0.000892 seconds time elapsed  ( +-  0.16% )
+

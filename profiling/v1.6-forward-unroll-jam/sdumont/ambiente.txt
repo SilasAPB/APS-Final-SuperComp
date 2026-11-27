@@ -1,0 +1,13 @@
+2026-11-27T14:57:02-03:00
+no: sdumont6169
+git: indisponivel neste no
+md5 fonte: dc3dbf7cfdef
+g++ (GCC) 15.2.0
+valgrind-3.19.0
+flags: -O2 -std=c++17 
+fonte: barenn.cpp
+CPU(s):              48
+Model name:          Intel(R) Xeon(R) Gold 6252 CPU @ 2.10GHz
+L1d cache:           32K
+L2 cache:            1024K
+L3 cache:            36608K
