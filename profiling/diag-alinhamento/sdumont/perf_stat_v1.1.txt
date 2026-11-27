@@ -1,0 +1,11 @@
+== v1.1 (-O2 -std=c++17 -falign-loops=32 -falign-functions=64)
+
+ Performance counter stats for 'profiling/diag-alinhamento/sdumont/barenn_v1.1' (5 runs):
+
+     4,697,431,077      cycles                                                        ( +-  0.01% )
+    12,904,072,598      instructions              #    2.75  insn per cycle           ( +-  0.00% )
+         5,430,828      branch-misses                                                 ( +-  0.31% )
+         2,351,929      L1-dcache-load-misses                                         ( +-  6.98% )
+
+          1.274766 +- 0.000209 seconds time elapsed  ( +-  0.02% )
+

@@ -1,0 +1,12 @@
+no=sdumont6165 reps=3
+bin=profiling/v1.1-vetores-por-referencia/sdumont/barenn
+
+ Performance counter stats for 'profiling/v1.1-vetores-por-referencia/sdumont/barenn' (3 runs):
+
+     4,819,089,028      cycles                                                        ( +-  0.01% )
+    12,856,654,606      instructions              #    2.67  insn per cycle           ( +-  0.00% )
+        11,034,700      branch-misses                                                 ( +-  0.18% )
+         1,634,633      L1-dcache-load-misses                                         ( +-  0.91% )
+
+          1.307956 +- 0.000228 seconds time elapsed  ( +-  0.02% )
+
