@@ -75,6 +75,7 @@ public:
         vector<float> grad_in(in_features);
         for (int j = 0; j < out_features; ++j) {
             const float d = delta[j];
+            if (d == 0.0f) continue;
             for (int i = 0; i < in_features; ++i) {
                 grad_in[i] += d * weights[j * in_features + i];
             }
@@ -83,6 +84,7 @@ public:
         // SGD por amostra. O gradiente do peso é delta vezes a entrada.
         // O gradiente do viés é o próprio delta.
         for (int i = 0; i < out_features; ++i) {
+            if (delta[i] == 0.0f) continue;
             float* w = &weights[i * in_features];
             for (int j = 0; j < in_features; ++j) {
                 w[j] -= learning_rate * (delta[i] * last_input[j]);
