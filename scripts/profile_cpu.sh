@@ -61,4 +61,5 @@ callgrind_annotate --show=Ir "$OUT/callgrind.out" "$SRC" > "$OUT/callgrind_annot
 callgrind_annotate "$OUT/callgrind.out" "$SRC" > "$OUT/callgrind_annotate_cache.txt"
 
 tail -n 1 "$OUT/memcheck.txt"
-cat "$OUT/callgrind_annotate.txt"
+# no log do job so as 12 funcoes mais caras (o arquivo callgrind_annotate.txt continua completo)
+sed -n '/file:function/,+13p' "$OUT/callgrind_annotate.txt" | cut -c1-130
