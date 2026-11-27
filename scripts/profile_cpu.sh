@@ -17,7 +17,7 @@ LIBS=""
 [ "$(g++ -dumpversion | cut -d. -f1)" -lt 9 ] && LIBS="-lstdc++fs"
 
 # ambiente
-{ date -Is; echo "no: $NODE"; git describe --tags --always --dirty; g++ --version | head -1
+{ date -Is; echo "no: $NODE"; echo "branch: $(git rev-parse --abbrev-ref HEAD) @ $(git rev-parse --short HEAD)"; echo "md5 fonte: $(md5sum < "$SRC" | cut -c1-12)"; git describe --tags --always --dirty; g++ --version | head -1
   valgrind --version; echo "flags: -O2 -std=c++17 $LIBS"; echo "fonte: $SRC"
   lscpu | grep -E 'Model name|^CPU\(s\)|L1d|L2|L3'; } > "$OUT/ambiente.txt" 2>&1
 
