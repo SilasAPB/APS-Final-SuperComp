@@ -14,15 +14,6 @@
 #include <utility>
 #include <vector>
 
-// Paralelismo multicore com OpenMP. Sem -fopenmp o programa continua sequencial.
-#ifdef _OPENMP
-#include <omp.h>
-// Com uma thread só, a barreira é dispensada (evita o custo da chamada da biblioteca).
-#define BARENN_BARREIRA if (T > 1) { _Pragma("omp barrier") }
-#else
-#define BARENN_BARREIRA
-#endif
-
 using namespace std;
 
 namespace Barenn {
@@ -40,9 +31,13 @@ class DenseLayer {
     // Matriz achatada: um único bloco contíguo, linha a linha.
     vector<float> weights;
     vector<float> bias;
-    // Buffers fixos: soma antes da ativação, saída da camada e gradiente da entrada.
+    // Gradientes acumulados ao longo do lote (os pesos só mudam no fim dele).
+    vector<float> dW;
+    vector<float> db;
+    // Buffers fixos: soma antes da ativação, saída, delta e gradiente da entrada.
     vector<float> last_z;
     vector<float> out_;
+    vector<float> delta_;
     vector<float> grad_in_;
     // Entrada do último forward (aponta para o buffer da camada anterior ou da amostra).
     const float* last_in_ = nullptr;
@@ -51,7 +46,9 @@ public:
     DenseLayer(int input_size, int output_size, bool is_final = false)
         : in_features(input_size), out_features(output_size), final(is_final),
           weights(static_cast<size_t>(output_size) * input_size), bias(output_size, 0),
-          last_z(output_size), out_(output_size), grad_in_(input_size) {
+          dW(static_cast<size_t>(output_size) * input_size, 0.0f), db(output_size, 0.0f),
+          last_z(output_size), out_(output_size), delta_(output_size),
+          grad_in_(input_size) {
         if (output_size > max_saidas) {
             throw runtime_error("DenseLayer: no máximo 32 neurônios por camada");
         }
@@ -107,58 +104,56 @@ public:
         return out_;
     }
 
-    // Forward de treino: a thread tid de T calcula uma faixa de blocos de 4 neurônios.
-    // Depois dele é preciso uma barreira antes de outra thread ler saida().
-    void ForwardPar(const float* input, int tid, int T) {
+    // Forward de treino: guarda a entrada, que o backward usa para o gradiente dos pesos.
+    void ForwardTreino(const float* input) {
         last_in_ = input;
-        const int blocos = (out_features + 3) / 4;
-        const int n0 = min(out_features, 4 * (blocos * tid / T));
-        const int n1 = min(out_features, 4 * (blocos * (tid + 1) / T));
-        ForwardRange(input, n0, n1);
+        ForwardRange(input, 0, out_features);
     }
 
-    // Backward de treino, dividido entre T threads. Cada elemento calculado (um
-    // grad_in[i], uma linha de pesos) pertence a uma única thread e é somado na
-    // mesma ordem do código sequencial. Com need_grad_in há uma barreira interna
-    // entre o cálculo de grad_in (que usa os pesos antigos) e a atualização dos pesos.
-    void BackwardPar(const float* grad_out, float learning_rate, bool need_grad_in,
-                     int tid, int T) {
+    // Backward de uma amostra. Não altera os pesos: só acumula o gradiente do lote
+    // (dW, db) e calcula o gradiente da entrada, que usa os pesos do início do lote.
+    void Backward(const float* grad_out, bool need_grad_in) {
         // Delta é o gradiente da perda em relação à soma antes da ativação.
         // Na ReLU, o gradiente passa apenas quando essa soma é positiva.
-        // Cada thread calcula o vetor inteiro (é pequeno), em memória própria.
-        float delta[max_saidas];
         for (int i = 0; i < out_features; ++i) {
-            delta[i] = final ? grad_out[i]
-                             : grad_out[i] * (last_z[i] > 0.0f ? 1.0f : 0.0f);
+            delta_[i] = final ? grad_out[i]
+                              : grad_out[i] * (last_z[i] > 0.0f ? 1.0f : 0.0f);
         }
 
         if (need_grad_in) {
-            // A thread calcula uma faixa de entradas i; para cada uma, j crescente.
-            const int i0 = in_features * tid / T;
-            const int i1 = in_features * (tid + 1) / T;
-            for (int i = i0; i < i1; ++i) grad_in_[i] = 0.0f;
+            fill(grad_in_.begin(), grad_in_.end(), 0.0f);
             for (int j = 0; j < out_features; ++j) {
-                const float d = delta[j];
+                const float d = delta_[j];
                 if (d == 0.0f) continue;
                 const float* w = &weights[j * in_features];
-                for (int i = i0; i < i1; ++i) {
+                for (int i = 0; i < in_features; ++i) {
                     grad_in_[i] += d * w[i];
                 }
             }
-            BARENN_BARREIRA
         }
 
-        // SGD por amostra. O gradiente do peso é delta vezes a entrada.
-        // O gradiente do viés é o próprio delta. Cada thread atualiza suas linhas.
-        const int r0 = out_features * tid / T;
-        const int r1 = out_features * (tid + 1) / T;
-        for (int i = r0; i < r1; ++i) {
-            if (delta[i] == 0.0f) continue;
-            float* w = &weights[i * in_features];
+        // O gradiente do peso é delta vezes a entrada; o do viés é o próprio delta.
+        for (int i = 0; i < out_features; ++i) {
+            const float d = delta_[i];
+            if (d == 0.0f) continue;
+            float* g = &dW[i * in_features];
             for (int j = 0; j < in_features; ++j) {
-                w[j] -= learning_rate * (delta[i] * last_in_[j]);
+                g[j] += d * last_in_[j];
             }
-            bias[i] -= learning_rate * delta[i];
+            db[i] += d;
+        }
+    }
+
+    // Fim do lote: uma única atualização com o gradiente acumulado (k = taxa / amostras).
+    void AplicarLote(float k) {
+        const size_t n = weights.size();
+        for (size_t p = 0; p < n; ++p) {
+            weights[p] -= k * dW[p];
+            dW[p] = 0.0f;
+        }
+        for (int i = 0; i < out_features; ++i) {
+            bias[i] -= k * db[i];
+            db[i] = 0.0f;
         }
     }
 };
@@ -226,36 +221,33 @@ float perda(const vector<float>& escores, int rotulo) {
     return perda(escores.data(), rotulo);
 }
 
-// Laço de treino executado por todas as threads de uma região OpenMP (a thread 0 é
-// a principal). Todas percorrem as mesmas amostras na mesma ordem; as barreiras
-// separam as etapas e nenhuma soma é repartida entre threads.
-void treinar(int tid, int T, DenseLayer& l1, DenseLayer& l2, DenseLayer& l3,
-             const vector<Amostra>& treino, float taxa, int epocas,
-             double* perdas, float* gradiente) {
+// Treino por mini-batch: dentro de um lote os pesos não mudam e cada amostra só acumula
+// gradientes; ao fim do lote há uma única atualização, com o gradiente médio.
+void treinar(DenseLayer& l1, DenseLayer& l2, DenseLayer& l3, const vector<Amostra>& treino,
+             float taxa, size_t tamanho_lote, int epocas, double* perdas, float* gradiente) {
     for (int epoca = 0; epoca < epocas; ++epoca) {
         double perda_total = 0;
         // Uma época percorre todo o conjunto na ordem do arquivo.
-        for (const auto& amostra : treino) {
-            l1.ForwardPar(amostra.imagem.data(), tid, T);
-            BARENN_BARREIRA
-            l2.ForwardPar(l1.saida(), tid, T);
-            BARENN_BARREIRA
-            l3.ForwardPar(l2.saida(), tid, T);
-            BARENN_BARREIRA
-            // A perda e o gradiente dos escores são calculados só pela thread 0.
-            if (tid == 0) {
+        for (size_t inicio = 0; inicio < treino.size(); inicio += tamanho_lote) {
+            const size_t fim = min(treino.size(), inicio + tamanho_lote);
+            for (size_t s = inicio; s < fim; ++s) {
+                const auto& amostra = treino[s];
+                l1.ForwardTreino(amostra.imagem.data());
+                l2.ForwardTreino(l1.saida());
+                l3.ForwardTreino(l2.saida());
                 perda_total += perda(l3.saida(), amostra.rotulo, gradiente);
-            }
-            BARENN_BARREIRA
 
-            // Propaga o gradiente da última camada até a primeira.
-            // Cada Backward também atualiza os parâmetros da sua camada.
-            l3.BackwardPar(gradiente, taxa, true, tid, T);
-            l2.BackwardPar(l3.grad_in(), taxa, true, tid, T);
-            l1.BackwardPar(l2.grad_in(), taxa, false, tid, T);
-            BARENN_BARREIRA
+                // Propaga o gradiente da última camada até a primeira.
+                l3.Backward(gradiente, true);
+                l2.Backward(l3.grad_in(), true);
+                l1.Backward(l2.grad_in(), false);
+            }
+            const float k = taxa / static_cast<float>(fim - inicio);
+            l1.AplicarLote(k);
+            l2.AplicarLote(k);
+            l3.AplicarLote(k);
         }
-        if (tid == 0) perdas[epoca] = perda_total / treino.size();
+        perdas[epoca] = perda_total / treino.size();
     }
 }
 
@@ -363,14 +355,32 @@ int main(int argc, char** argv) {
     const string arquivo_teste = argc == 3 ? argv[2] : "data/optdigits.tes";
 
     try {
-        const auto treino = Barenn::ler_dados(arquivo_treino);
+        auto treino_total = Barenn::ler_dados(arquivo_treino);
         const auto teste = Barenn::ler_dados(arquivo_teste);
         if (filesystem::equivalent(arquivo_treino, arquivo_teste)) {
             throw runtime_error("Use arquivos distintos para treino e teste.");
         }
 
         constexpr int epocas = 51;
-        constexpr float taxa = 0.02f;
+        // Mini-batch: tamanho do lote e taxa para o gradiente médio. As variáveis
+        // BARENN_LOTE e BARENN_TAXA servem só para a calibração (scripts/calibrar_minibatch.sh).
+        size_t tamanho_lote = 64;
+        float taxa = 0.3f;
+        if (const char* env = getenv("BARENN_LOTE")) tamanho_lote = max(1, atoi(env));
+        if (const char* env = getenv("BARENN_TAXA")) taxa = strtof(env, nullptr);
+
+        // Com BARENN_VALIDACAO treina em 4/5 do conjunto de treino e avalia no 1/5 restante,
+        // sem tocar no conjunto de teste (usado para escolher a taxa).
+        const bool modo_validacao = getenv("BARENN_VALIDACAO") != nullptr;
+        vector<Barenn::Amostra> treino, validacao;
+        if (modo_validacao) {
+            for (size_t i = 0; i < treino_total.size(); ++i) {
+                (i % 5 == 0 ? validacao : treino).push_back(move(treino_total[i]));
+            }
+        } else {
+            treino = move(treino_total);
+        }
+
         // Rede densa com dimensões 64 -> 32 -> 16 -> 10.
         Barenn::DenseLayer l1(Barenn::entradas, 32);
         Barenn::DenseLayer l2(32, 16);
@@ -378,25 +388,10 @@ int main(int argc, char** argv) {
         vector<float> gradiente(Barenn::classes);
         array<double, epocas> perdas{};
 
-        // Número de threads: OMP_NUM_THREADS (padrão 1). O posicionamento das threads
-        // fica por conta de OMP_PLACES e OMP_PROC_BIND.
-        int threads = 1;
-        if (const char* env = getenv("OMP_NUM_THREADS")) threads = max(1, atoi(env));
-
-        // A medição inclui forward, perda e backward de todas as épocas.
+        // A medição inclui forward, perda, backward e atualização de todas as épocas.
         const auto inicio = chrono::steady_clock::now();
-#pragma omp parallel num_threads(threads)
-        {
-#ifdef _OPENMP
-            const int tid = omp_get_thread_num();
-            const int T = omp_get_num_threads();
-#else
-            const int tid = 0;
-            const int T = 1;
-#endif
-            Barenn::treinar(tid, T, l1, l2, l3, treino, taxa, epocas,
-                            perdas.data(), gradiente.data());
-        }
+        Barenn::treinar(l1, l2, l3, treino, taxa, tamanho_lote, epocas,
+                        perdas.data(), gradiente.data());
         const chrono::duration<double> tempo = chrono::steady_clock::now() - inicio;
 
         // Imprime as métricas e roda a avaliação após encerrar o cronômetro.
@@ -407,7 +402,7 @@ int main(int argc, char** argv) {
                  << " | perda media " << perdas[epoca] << "\n";
         }
         cout << "Tempo de treino " << tempo.count() << " s\n";
-        Barenn::avaliar(l1, l2, l3, teste);
+        Barenn::avaliar(l1, l2, l3, modo_validacao ? validacao : teste);
     } catch (const exception& erro) {
         cerr << "Erro: " << erro.what() << "\n";
         return 1;

@@ -1,0 +1,11 @@
+# calibracao em validacao (4/5 do treino para treinar, 1/5 para validar); lote=64; 51 epocas
+# md5 fonte: b24bfcd6959e
+taxa acuracia_val(%) acertos perda_val
+0.1 97.0 742 0.0642
+0.2 97.6 747 0.0404
+0.3 98.2 751 0.0328
+0.5 98.0 750 0.0274
+0.8 97.6 747 0.0287
+1.0 97.1 743 0.0331
+1.5 9.7 74 0.4737
+melhor (maior acuracia de validacao; empate: menor perda): 0.3 98.2 751 0.0328
