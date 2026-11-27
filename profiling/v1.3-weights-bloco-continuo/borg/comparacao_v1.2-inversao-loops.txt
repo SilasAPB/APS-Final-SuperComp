@@ -1,0 +1,6 @@
+A=profiling/v1.2-inversao-loops/borg/barenn
+B=profiling/v1.3-weights-bloco-continuo/borg/barenn
+reps=20 pin=4 data=2026-11-27T09:56:55-03:00 no=borg
+A: media=0.4800 desvio=0.0017 mediana=0.4804 min=0.4756 max=0.4826 n=20
+B: media=0.5569 desvio=0.0016 mediana=0.5564 min=0.5547 max=0.5600 n=20
+speedup (mediana A/B) = 0.863x   (minimo A/B) = 0.857x
