@@ -1,0 +1,6 @@
+A=profiling/v0.1-baseline/sdumont/barenn
+B=profiling/v1.6-forward-unroll-jam/sdumont/barenn
+reps=20 pin=nenhum data=2026-11-27T15:18:48-03:00 no=sdumont6169
+A: media=1.2401 desvio=0.0038 mediana=1.2418 min=1.2348 max=1.2451 n=20
+B: media=0.5031 desvio=0.0018 mediana=0.5031 min=0.5006 max=0.5070 n=20
+speedup (mediana A/B) = 2.468x   (minimo A/B) = 2.467x
