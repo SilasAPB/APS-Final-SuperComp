@@ -1,0 +1,6 @@
+A=profiling/v2.2-minibatch-sequencial/sdumont/barenn
+B=profiling/v2.3-minibatch-paralelo/sdumont/barenn
+reps=20 pin=nenhum data=2026-11-27T19:33:33-03:00 no=sdumont6169
+A: media=0.4932 desvio=0.0050 mediana=0.4912 min=0.4870 max=0.5048 n=20
+B: media=0.2786 desvio=0.0024 mediana=0.2793 min=0.2722 max=0.2825 n=20
+speedup (mediana A/B) = 1.759x   (minimo A/B) = 1.789x
