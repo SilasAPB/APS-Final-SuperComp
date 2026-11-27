@@ -50,13 +50,35 @@ public:
         last_z.resize(out_features);
         vector<float> out(out_features);
         // Cada neurônio soma o viés aos produtos entre entradas e pesos.
-        for (int i = 0; i < out_features; ++i) {
+        // Quatro neurônios por vez, cada um com seu acumulador: as cadeias de soma
+        // ficam independentes e cada neurônio mantém a mesma ordem de soma de antes.
+        int i = 0;
+        for (; i + 4 <= out_features; i += 4) {
+            float s0 = bias[i], s1 = bias[i + 1], s2 = bias[i + 2], s3 = bias[i + 3];
+            const float* w0 = &weights[i * in_features];
+            const float* w1 = w0 + in_features;
+            const float* w2 = w1 + in_features;
+            const float* w3 = w2 + in_features;
+            for (int j = 0; j < in_features; ++j) {
+                const float x = input[j];
+                s0 += x * w0[j];
+                s1 += x * w1[j];
+                s2 += x * w2[j];
+                s3 += x * w3[j];
+            }
+            const float sums[4] = {s0, s1, s2, s3};
+            for (int k = 0; k < 4; ++k) {
+                last_z[i + k] = sums[k];
+                // As camadas ocultas usam ReLU. A última devolve escores lineares.
+                out[i + k] = final ? sums[k] : max(0.0f, sums[k]);
+            }
+        }
+        for (; i < out_features; ++i) {
             float sum = bias[i];
             for (int j = 0; j < in_features; ++j) {
                 sum += input[j] * weights[i * in_features + j];
             }
             last_z[i] = sum;
-            // As camadas ocultas usam ReLU. A última devolve escores lineares.
             out[i] = final ? sum : max(0.0f, sum);
         }
         return out;
