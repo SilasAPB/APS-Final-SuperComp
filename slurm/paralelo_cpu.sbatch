@@ -21,7 +21,25 @@ export OMP_PLACES=cores           # uma thread por nucleo fisico
 export OMP_PROC_BIND=close        # threads proximas (mesmo socket, enquanto couber)
 export OMP_WAIT_POLICY=active     # espera ativa nas barreiras
 
+# Diagnostico de afinidade: confirma que as threads rodam em nucleos distintos (CPUs 0-23 = socket 0, 24-47 = socket 1)
+echo "nproc=$(nproc) afinidade_permitida=$(taskset -cp $$ | cut -d: -f2) cpus_por_tarefa=$SLURM_CPUS_PER_TASK"
+OMP_NUM_THREADS=4 OMP_DISPLAY_AFFINITY=TRUE OMP_AFFINITY_FORMAT="thread %n de %N no cpu %A" \
+  "profiling/$B/sdumont/barenn" 2>&1 | grep "^thread" | sort | uniq
+
+# Criterio de aceite 1: a saida deve ser identica a da versao A para todo T e em execucoes repetidas.
+for T in $LISTA; do
+  for rep in 1 2; do
+    if OMP_NUM_THREADS=$T "profiling/$B/sdumont/barenn" | grep -v '^Tempo de treino' | diff -q - "profiling/$A/sdumont/saida.txt" > /dev/null; then
+      echo "T=$T rep=$rep IGUAL"
+    else
+      echo "T=$T rep=$rep DIFERENTE"
+    fi
+  done
+done | tee "profiling/$B/sdumont/identidade_${A}.txt"
+
 for T in $LISTA; do
   OMP_NUM_THREADS=$T scripts/compare_cpu.sh "profiling/$A/sdumont/barenn" "profiling/$B/sdumont/barenn" 20 \
     "profiling/$B/sdumont/comparacao_${A}_T${T}.txt"
 done
+
+cat profiling/$B/sdumont/comparacao_${A}_T*.txt
