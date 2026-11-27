@@ -1,0 +1,12 @@
+no=sdumont6165 reps=3
+bin=profiling/v0.1-baseline/sdumont/barenn
+
+ Performance counter stats for 'profiling/v0.1-baseline/sdumont/barenn' (3 runs):
+
+     4,742,147,410      cycles                                                        ( +-  0.04% )
+    12,909,956,642      instructions              #    2.72  insn per cycle           ( +-  0.01% )
+         5,431,199      branch-misses                                                 ( +-  0.88% )
+         2,007,569      L1-dcache-load-misses                                         ( +-  1.45% )
+
+          1.287294 +- 0.000259 seconds time elapsed  ( +-  0.02% )
+

@@ -1,0 +1,11 @@
+== baseline (-O2 -std=c++17 -falign-loops=32 -falign-functions=64)
+
+ Performance counter stats for 'profiling/diag-alinhamento/sdumont/barenn_baseline' (5 runs):
+
+     4,729,604,429      cycles                                                        ( +-  0.02% )
+    12,934,709,866      instructions              #    2.73  insn per cycle           ( +-  0.00% )
+         5,205,810      branch-misses                                                 ( +-  0.21% )
+         1,809,485      L1-dcache-load-misses                                         ( +-  3.08% )
+
+          1.284676 +- 0.000457 seconds time elapsed  ( +-  0.04% )
+

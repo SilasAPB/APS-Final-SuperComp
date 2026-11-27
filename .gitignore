@@ -4,4 +4,5 @@ profiling/**/barenn_g
 slurm/**/*.out
 
 # rascunhos locais das Issues (o texto oficial vai para o GitHub)
-issues/
+issues/*
+profiling/**/diag-alinhamento/barenn_*

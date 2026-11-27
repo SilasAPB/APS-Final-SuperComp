@@ -17,7 +17,7 @@ LIBS=""
 [ "$(g++ -dumpversion | cut -d. -f1)" -lt 9 ] && LIBS="-lstdc++fs"
 
 # ambiente
-{ date -Is; echo "no: $NODE"; git describe --tags --always --dirty; g++ --version | head -1
+{ date -Is; echo "no: $NODE"; echo "branch: $(git rev-parse --abbrev-ref HEAD) @ $(git rev-parse --short HEAD)"; echo "md5 fonte: $(md5sum < "$SRC" | cut -c1-12)"; git describe --tags --always --dirty; g++ --version | head -1
   valgrind --version; echo "flags: -O2 -std=c++17 $LIBS"; echo "fonte: $SRC"
   lscpu | grep -E 'Model name|^CPU\(s\)|L1d|L2|L3'; } > "$OUT/ambiente.txt" 2>&1
 
@@ -32,11 +32,22 @@ awk '{s+=$1; ss+=$1*$1} END{m=s/NR; printf "media=%.4f desvio=%.4f n=%d\n", m, s
   "$OUT/tempos.txt" >> "$OUT/tempos.txt"
 cat "$OUT/tempos.txt"
 
+# contadores de hardware (ciclos, IPC, branch-misses): so se houver perf no no
+if command -v perf >/dev/null 2>&1; then
+  { echo "no=$NODE reps=5"
+    perf stat -r 5 -e cycles,instructions,branch-misses,L1-dcache-load-misses "$OUT/barenn" 2>&1 >/dev/null
+  } > "$OUT/perf_stat.txt" || true
+  cat "$OUT/perf_stat.txt"
+fi
+
 # valgrind e callgrind
 valgrind --leak-check=full "$OUT/barenn_g" > /dev/null 2> "$OUT/memcheck.txt" || true
 valgrind --tool=callgrind --cache-sim=yes --callgrind-out-file="$OUT/callgrind.out" \
   "$OUT/barenn_g" > /dev/null 2> /dev/null
-callgrind_annotate "$OUT/callgrind.out" > "$OUT/callgrind_annotate.txt"
+# legivel: so instrucoes (Ir) + codigo-fonte anotado linha a linha
+callgrind_annotate --show=Ir "$OUT/callgrind.out" "$SRC" > "$OUT/callgrind_annotate.txt"
+# completo: Ir + acessos e misses de cache (D1/LL)
+callgrind_annotate "$OUT/callgrind.out" "$SRC" > "$OUT/callgrind_annotate_cache.txt"
 
 tail -n 1 "$OUT/memcheck.txt"
 cat "$OUT/callgrind_annotate.txt"

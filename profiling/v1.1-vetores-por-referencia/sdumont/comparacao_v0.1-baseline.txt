@@ -1,0 +1,6 @@
+A=profiling/v0.1-baseline/sdumont/barenn
+B=profiling/v1.1-vetores-por-referencia/sdumont/barenn
+reps=20 pin=nenhum data=2026-11-26T21:13:14-03:00 no=sdumont6063
+A: media=1.2428 desvio=0.0072 mediana=1.2451 min=1.2347 max=1.2599 n=20
+B: media=1.2649 desvio=0.0071 mediana=1.2660 min=1.2565 max=1.2868 n=20
+speedup (mediana A/B) = 0.983x   (minimo A/B) = 0.983x
