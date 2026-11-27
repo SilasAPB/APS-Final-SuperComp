@@ -4,9 +4,9 @@ Profile data file 'profiling/v1.1-vetores-por-referencia/sdumont/callgrind.out' 
 I1 cache: 32768 B, 64 B, 8-way associative
 D1 cache: 32768 B, 64 B, 8-way associative
 LL cache: 37748736 B, 64 B, 18-way associative
-Timerange: Basic block 0 - 1534630604
+Timerange: Basic block 0 - 1534630598
 Trigger: Program termination
-Profiled target:  profiling/v1.1-vetores-por-referencia/sdumont/barenn_g (PID 1335725, part 1)
+Profiled target:  profiling/v1.1-vetores-por-referencia/sdumont/barenn_g (PID 1336282, part 1)
 Events recorded:  Ir Dr Dw I1mr D1mr D1mw ILmr DLmr DLmw
 Events shown:     Ir
 Event sort order: Ir Dr Dw I1mr D1mr D1mw ILmr DLmr DLmw
@@ -18,7 +18,7 @@ Auto-annotation:  on
 --------------------------------------------------------------------------------
 Ir                      
 --------------------------------------------------------------------------------
-12,849,602,498 (100.0%)  PROGRAM TOTALS
+12,849,602,479 (100.0%)  PROGRAM TOTALS
 
 --------------------------------------------------------------------------------
 Ir                      file:function
@@ -59,6 +59,402 @@ Ir                      file:function
     5,903,100 ( 0.05%)  /petrobr/app_sequana/gcc/15.2.0/include/c++/15.2.0/bits/stl_vector.h:std::vector<float, std::allocator<float> >::operator=(std::vector<float, std::allocator<float> > const&) [clone .isra.0]
     5,756,508 ( 0.04%)  ???:__strlen_avx2 [/usr/lib64/libc-2.28.so]
     5,395,200 ( 0.04%)  /home/carlos.abreu2/gcc/gcc-15.2.0/gcc-15.2.0_build/x86_64-pc-linux-gnu/libstdc++-v3/include/bits/locale_facets.h:std::istream& std::istream::_M_extract<float>(float&)
+
+--------------------------------------------------------------------------------
+-- Auto-annotated source: /petrobr/app_sequana/gcc/15.2.0/include/c++/15.2.0/bits/new_allocator.h
+--------------------------------------------------------------------------------
+Ir                  
+
+-- line 118 ----------------------------------------
+         .           #else
+         .           # define _GLIBCXX_OPERATOR_NEW ::operator new
+         .           # define _GLIBCXX_OPERATOR_DELETE ::operator delete
+         .           #endif
+         .           
+         .                 // NB: __n is permitted to be 0.  The C++ standard says nothing
+         .                 // about what the return value is when __n == 0.
+         .                 _GLIBCXX_NODISCARD _Tp*
+   584,925 ( 0.00%)        allocate(size_type __n, const void* = static_cast<const void*>(0))
+         .                 {
+         .           #if __cplusplus >= 201103L
+         .           	// _GLIBCXX_RESOLVE_LIB_DEFECTS
+         .           	// 3308. std::allocator<void>().allocate(n)
+         .           	static_assert(sizeof(_Tp) != 0, "cannot allocate incomplete types");
+         .           #endif
+         .           
+         .           	if (__builtin_expect(__n > this->_M_max_size(), false))
+-- line 134 ----------------------------------------
+-- line 143 ----------------------------------------
+         .           #if __cpp_aligned_new && __cplusplus >= 201103L
+         .           	if (alignof(_Tp) > __STDCPP_DEFAULT_NEW_ALIGNMENT__)
+         .           	  {
+         .           	    std::align_val_t __al = std::align_val_t(alignof(_Tp));
+         .           	    return static_cast<_Tp*>(_GLIBCXX_OPERATOR_NEW(__n * sizeof(_Tp),
+         .           							   __al));
+         .           	  }
+         .           #endif
+12,507,448 ( 0.10%)  	return static_cast<_Tp*>(_GLIBCXX_OPERATOR_NEW(__n * sizeof(_Tp)));
+    14,783 ( 0.00%)  => /home/carlos.abreu2/gcc/gcc-15.2.0/gcc-15.2.0_build/x86_64-pc-linux-gnu/libstdc++-v3/libsupc++/../../../../gcc-15.2.0/libstdc++-v3/libsupc++/new_op.cc:operator new(unsigned long) (67x)
+         .                 }
+         .           
+         .                 // __p is not permitted to be a null pointer.
+         .                 void
+         3 ( 0.00%)        deallocate(_Tp* __p, size_type __n __attribute__ ((__unused__)))
+         .                 {
+         .           #if __cpp_sized_deallocation
+         .           # define _GLIBCXX_SIZED_DEALLOC(p, n) (p), (n) * sizeof(_Tp)
+         .           #else
+         .           # define _GLIBCXX_SIZED_DEALLOC(p, n) (p)
+         .           #endif
+         .           
+         .           #if __cpp_aligned_new && __cplusplus >= 201103L
+         .           	if (alignof(_Tp) > __STDCPP_DEFAULT_NEW_ALIGNMENT__)
+         .           	  {
+         .           	    _GLIBCXX_OPERATOR_DELETE(_GLIBCXX_SIZED_DEALLOC(__p, __n),
+         .           				     std::align_val_t(alignof(_Tp)));
+         .           	    return;
+         .           	  }
+         .           #endif
+ 6,671,802 ( 0.05%)  	_GLIBCXX_OPERATOR_DELETE(_GLIBCXX_SIZED_DEALLOC(__p, __n));
+        96 ( 0.00%)  => /home/carlos.abreu2/gcc/gcc-15.2.0/gcc-15.2.0_build/x86_64-pc-linux-gnu/libstdc++-v3/libsupc++/../../../../gcc-15.2.0/libstdc++-v3/libsupc++/del_ops.cc:operator delete(void*, unsigned long) (1x)
+         .                 }
+         .           
+         .           #undef _GLIBCXX_SIZED_DEALLOC
+         .           #undef _GLIBCXX_OPERATOR_DELETE
+         .           #undef _GLIBCXX_OPERATOR_NEW
+         .           
+         .           #if __cplusplus <= 201703L
+         .                 __attribute__((__always_inline__))
+-- line 180 ----------------------------------------
+-- line 183 ----------------------------------------
+         .                 { return _M_max_size(); }
+         .           
+         .           #if __cplusplus >= 201103L
+         .                 template<typename _Up, typename... _Args>
+         .           	__attribute__((__always_inline__))
+         .           	void
+         .           	construct(_Up* __p, _Args&&... __args)
+         .           	noexcept(__is_nothrow_new_constructible<_Up, _Args...>)
+   438,539 ( 0.00%)  	{ ::new((void *)__p) _Up(std::forward<_Args>(__args)...); }
+         .           
+         .                 template<typename _Up>
+         .           	__attribute__((__always_inline__))
+         .           	void
+         .           	destroy(_Up* __p)
+         .           	noexcept(std::is_nothrow_destructible<_Up>::value)
+         .           	{ __p->~_Up(); }
+         .           #else
+-- line 199 ----------------------------------------
+
+--------------------------------------------------------------------------------
+-- Auto-annotated source: /petrobr/app_sequana/gcc/15.2.0/include/c++/15.2.0/bits/stl_vector.h
+--------------------------------------------------------------------------------
+Ir                   
+
+-- line 97 ----------------------------------------
+          .           
+          .                 struct _Vector_impl_data
+          .                 {
+          .           	pointer _M_start;
+          .           	pointer _M_finish;
+          .           	pointer _M_end_of_storage;
+          .           
+          .           	_GLIBCXX20_CONSTEXPR
+      5,623 ( 0.00%)  	_Vector_impl_data() _GLIBCXX_NOEXCEPT
+  1,783,075 ( 0.01%)  	: _M_start(), _M_finish(), _M_end_of_storage()
+          .           	{ }
+          .           
+          .           #if __cplusplus >= 201103L
+          .           	_GLIBCXX20_CONSTEXPR
+          .           	_Vector_impl_data(_Vector_impl_data&& __x) noexcept
+     23,524 ( 0.00%)  	: _M_start(__x._M_start), _M_finish(__x._M_finish),
+     23,524 ( 0.00%)  	  _M_end_of_storage(__x._M_end_of_storage)
+         75 ( 0.00%)  	{ __x._M_start = __x._M_finish = __x._M_end_of_storage = pointer(); }
+          .           #endif
+          .           
+          .           	_GLIBCXX20_CONSTEXPR
+          .           	void
+          .           	_M_copy_data(_Vector_impl_data const& __x) _GLIBCXX_NOEXCEPT
+          .           	{
+          .           	  _M_start = __x._M_start;
+          .           	  _M_finish = __x._M_finish;
+-- line 122 ----------------------------------------
+-- line 365 ----------------------------------------
+          .           
+          .                 _GLIBCXX20_CONSTEXPR
+          .                 _Vector_base(const allocator_type& __a, _Vector_base&& __x)
+          .                 : _M_impl(_Tp_alloc_type(__a), std::move(__x._M_impl))
+          .                 { }
+          .           #endif
+          .           
+          .                 _GLIBCXX20_CONSTEXPR
+          1 ( 0.00%)        ~_Vector_base() _GLIBCXX_NOEXCEPT
+          .                 {
+          .           	_M_deallocate(_M_impl._M_start,
+  1,786,285 ( 0.01%)  		      _M_impl._M_end_of_storage - _M_impl._M_start);
+          .                 }
+          .           
+          .               public:
+          .                 _Vector_impl _M_impl;
+          .           
+          .                 _GLIBCXX20_CONSTEXPR
+          .                 pointer
+          .                 _M_allocate(size_t __n)
+          .                 {
+          .           	typedef __gnu_cxx::__alloc_traits<_Tp_alloc_type> _Tr;
+  4,105,233 ( 0.03%)  	return __n != 0 ? _Tr::allocate(_M_impl, __n) : pointer();
+          .                 }
+          .           
+          .                 _GLIBCXX20_CONSTEXPR
+          .                 void
+          2 ( 0.00%)        _M_deallocate(pointer __p, size_t __n)
+          .                 {
+          .           	typedef __gnu_cxx::__alloc_traits<_Tp_alloc_type> _Tr;
+  1,968,370 ( 0.02%)  	if (__p)
+          .           	  _Tr::deallocate(_M_impl, __p, __n);
+          .                 }
+          .           
+          .               protected:
+          .           
+          .                 _GLIBCXX20_CONSTEXPR
+          .                 void
+          .                 _M_create_storage(size_t __n)
+          .                 {
+  2,350,532 ( 0.02%)  	this->_M_impl._M_start = this->_M_allocate(__n);
+          .           	this->_M_impl._M_finish = this->_M_impl._M_start;
+  4,690,337 ( 0.04%)  	this->_M_impl._M_end_of_storage = this->_M_impl._M_start + __n;
+          .                 }
+          .           
+          .           #if __glibcxx_containers_ranges // C++ >= 23
+          .                 // Called by insert_range, and indirectly by assign_range, append_range.
+          .                 // Initializes new elements in storage at __ptr and updates __ptr to
+          .                 // point after the last new element.
+          .                 // Provides strong exception safety guarantee.
+          .                 // Requires [ptr, ptr+distance(rg)) is a valid range.
+-- line 415 ----------------------------------------
+-- line 627 ----------------------------------------
+          .                  *  The newly-created %vector uses a copy of the allocator object used
+          .                  *  by @a __x (unless the allocator traits dictate a different object).
+          .                  */
+          .                 _GLIBCXX20_CONSTEXPR
+          .                 vector(const vector& __x)
+          .                 : _Base(__x.size(),
+          .           	_Alloc_traits::_S_select_on_copy(__x._M_get_Tp_allocator()))
+          .                 {
+        116 ( 0.00%)  	this->_M_impl._M_finish =
+          .           	  std::__uninitialized_copy_a(__x.begin(), __x.end(),
+          .           				      this->_M_impl._M_start,
+          .           				      _M_get_Tp_allocator());
+          .                 }
+          .           
+          .           #if __cplusplus >= 201103L
+          .                 /**
+          .                  *  @brief  %Vector move constructor.
+-- line 643 ----------------------------------------
+-- line 792 ----------------------------------------
+          .           
+          .                 /**
+          .                  *  The dtor only erases the elements, and note that if the
+          .                  *  elements themselves are pointers, the pointed-to memory is
+          .                  *  not touched in any way.  Managing the pointer is the user's
+          .                  *  responsibility.
+          .                  */
+          .                 _GLIBCXX20_CONSTEXPR
+          8 ( 0.00%)        ~vector() _GLIBCXX_NOEXCEPT
+          .                 {
+         10 ( 0.00%)  	std::_Destroy(this->_M_impl._M_start, this->_M_impl._M_finish,
+          .           		      _M_get_Tp_allocator());
+          .           	_GLIBCXX_ASAN_ANNOTATE_BEFORE_DEALLOC;
+          8 ( 0.00%)        }
+        104 ( 0.00%)  => /petrobr/app_sequana/gcc/15.2.0/include/c++/15.2.0/bits/stl_vector.h:std::_Vector_base<float, std::allocator<float> >::~_Vector_base() (1x)
+          .           
+          .                 /**
+          .                  *  @brief  %Vector assignment operator.
+          .                  *  @param  __x  A %vector of identical element and allocator types.
+          .                  *
+          .                  *  All the elements of @a __x are copied, but any unused capacity in
+          .                  *  @a __x will not be copied.
+          .                  *
+-- line 813 ----------------------------------------
+-- line 1109 ----------------------------------------
+          .                 crend() const noexcept
+          .                 { return const_reverse_iterator(begin()); }
+          .           #endif
+          .           
+          .                 // [23.2.4.2] capacity
+          .                 /**  Returns the number of elements in the %vector.  */
+          .                 _GLIBCXX_NODISCARD _GLIBCXX20_CONSTEXPR
+          .                 size_type
+         10 ( 0.00%)        size() const _GLIBCXX_NOEXCEPT
+          .                 {
+  6,674,763 ( 0.05%)  	ptrdiff_t __dif = this->_M_impl._M_finish - this->_M_impl._M_start;
+          .           	if (__dif < 0)
+          .           	   __builtin_unreachable ();
+          .           	return size_type(__dif);
+          .                 }
+          .           
+          .                 /**  Returns the size() of the largest possible %vector.  */
+          .                 _GLIBCXX_NODISCARD _GLIBCXX20_CONSTEXPR
+          .                 size_type
+-- line 1127 ----------------------------------------
+-- line 1137 ----------------------------------------
+          .                  *  number of elements.  If the number is smaller than the
+          .                  *  %vector's current size the %vector is truncated, otherwise
+          .                  *  default constructed elements are appended.
+          .                  */
+          .                 _GLIBCXX20_CONSTEXPR
+          .                 void
+          .                 resize(size_type __new_size)
+          .                 {
+  1,186,011 ( 0.01%)  	if (__new_size > size())
+         12 ( 0.00%)  	  _M_default_append(__new_size - size());
+        574 ( 0.00%)  => /petrobr/app_sequana/gcc/15.2.0/include/c++/15.2.0/bits/vector.tcc:std::vector<float, std::allocator<float> >::_M_default_append(unsigned long) (3x)
+  1,765,530 ( 0.01%)  	else if (__new_size < size())
+          .           	  _M_erase_at_end(this->_M_impl._M_start + __new_size);
+          .                 }
+          .           
+          .                 /**
+          .                  *  @brief  Resizes the %vector to the specified number of elements.
+          .                  *  @param  __new_size  Number of elements the %vector should contain.
+          .                  *  @param  __x  Data with which new elements should be populated.
+          .                  *
+-- line 1155 ----------------------------------------
+-- line 1203 ----------------------------------------
+          .                  *  Returns the total number of elements that the %vector can
+          .                  *  hold before needing to allocate more memory.
+          .                  */
+          .                 _GLIBCXX_NODISCARD _GLIBCXX20_CONSTEXPR
+          .                 size_type
+          .                 capacity() const _GLIBCXX_NOEXCEPT
+          .                 {
+          .           	ptrdiff_t __dif = this->_M_impl._M_end_of_storage
+  1,770,930 ( 0.01%)  			  - this->_M_impl._M_start;
+          .           	if (__dif < 0)
+          .           	   __builtin_unreachable ();
+          .           	return size_type(__dif);
+          .                 }
+          .           
+          .                 /**
+          .                  *  Returns true if the %vector is empty.  (Thus begin() would
+          .                  *  equal end().)
+-- line 1219 ----------------------------------------
+-- line 1256 ----------------------------------------
+          .                  *  out_of_range lookups are not defined. (For checked lookups
+          .                  *  see at().)
+          .                  */
+          .                 _GLIBCXX_NODISCARD _GLIBCXX20_CONSTEXPR
+          .                 reference
+          .                 operator[](size_type __n) _GLIBCXX_NOEXCEPT
+          .                 {
+          .           	__glibcxx_requires_subscript(__n);
+155,386,362 ( 1.21%)  	return *(this->_M_impl._M_start + __n);
+          .                 }
+          .           
+          .                 /**
+          .                  *  @brief  Subscript access to the data contained in the %vector.
+          .                  *  @param __n The index of the element for which data should be
+          .                  *  accessed.
+          .                  *  @return  Read-only (constant) reference to data.
+          .                  *
+-- line 1272 ----------------------------------------
+-- line 1275 ----------------------------------------
+          .                  *  out_of_range lookups are not defined. (For checked lookups
+          .                  *  see at().)
+          .                  */
+          .                 _GLIBCXX_NODISCARD _GLIBCXX20_CONSTEXPR
+          .                 const_reference
+          .                 operator[](size_type __n) const _GLIBCXX_NOEXCEPT
+          .                 {
+          .           	__glibcxx_requires_subscript(__n);
+  6,348,753 ( 0.05%)  	return *(this->_M_impl._M_start + __n);
+          .                 }
+          .           
+          .               protected:
+          .                 /// Safety check used only from at().
+          .                 _GLIBCXX20_CONSTEXPR
+          .                 void
+          .                 _M_range_check(size_type __n) const
+          .                 {
+-- line 1291 ----------------------------------------
+-- line 1874 ----------------------------------------
+          .           	_GLIBCXX20_CONSTEXPR
+          .           	_Guard_alloc(pointer __s, size_type __l, _Base& __vect)
+          .           	: _M_storage(__s), _M_len(__l), _M_vect(__vect)
+          .           	{ }
+          .           
+          .           	_GLIBCXX20_CONSTEXPR
+          .           	~_Guard_alloc()
+          .           	{
+     78,762 ( 0.00%)  	  if (_M_storage)
+          .           	    _M_vect._M_deallocate(_M_storage, _M_len);
+          .           	}
+          .           
+          .           	_GLIBCXX20_CONSTEXPR
+          .           	pointer
+          .           	_M_release()
+          .           	{
+          .           	  pointer __res = _M_storage;
+-- line 1890 ----------------------------------------
+-- line 1991 ----------------------------------------
+          .           	}
+          .           
+          .                 // Called by the first initialize_dispatch above and by the
+          .                 // vector(n,value,a) constructor.
+          .                 _GLIBCXX20_CONSTEXPR
+          .                 void
+          .                 _M_fill_initialize(size_type __n, const value_type& __value)
+          .                 {
+          6 ( 0.00%)  	this->_M_impl._M_finish =
+          .           	  std::__uninitialized_fill_n_a(this->_M_impl._M_start, __n, __value,
+          .           					_M_get_Tp_allocator());
+          .                 }
+          .           
+          .           #if __cplusplus >= 201103L
+          .                 // Called by the vector(n) constructor.
+          .                 _GLIBCXX20_CONSTEXPR
+          .                 void
+          .                 _M_default_initialize(size_type __n)
+          .                 {
+  1,765,543 ( 0.01%)  	this->_M_impl._M_finish =
+          .           	  std::__uninitialized_default_n_a(this->_M_impl._M_start, __n,
+          .           					   _M_get_Tp_allocator());
+          .                 }
+          .           #endif
+          .           
+          .                 // Internal assign functions follow.  The *_aux functions do the actual
+          .                 // assignment work for the range versions.
+          .           
+-- line 2018 ----------------------------------------
+-- line 2191 ----------------------------------------
+          .                 { return _M_insert_rval(__position, std::move(__v)); }
+          .           #endif
+          .           
+          .                 // Called by _M_fill_insert, _M_insert_aux etc.
+          .                 _GLIBCXX20_CONSTEXPR
+          .                 size_type
+          .                 _M_check_len(size_type __n, const char* __s) const
+          .                 {
+    118,159 ( 0.00%)  	if (max_size() - size() < __n)
+          .           	  __throw_length_error(__N(__s));
+          .           
+     78,726 ( 0.00%)  	const size_type __len = size() + (std::max)(size(), __n);
+    118,145 ( 0.00%)  	return (__len < size() || __len > max_size()) ? max_size() : __len;
+          .                 }
+          .           
+          .                 // Called by constructors to check initial size.
+          .                 static _GLIBCXX20_CONSTEXPR size_type
+          .                 _S_check_init_len(size_type __n, const allocator_type& __a)
+          .                 {
+  5,849,217 ( 0.05%)  	if (__n > _S_max_size(_Tp_alloc_type(__a)))
+          .           	  __throw_length_error(
+          .           	      __N("cannot create std::vector larger than max_size()"));
+          .           	return __n;
+          .                 }
+          .           
+          .                 static _GLIBCXX20_CONSTEXPR size_type
+          .                 _S_max_size(const _Tp_alloc_type& __a) _GLIBCXX_NOEXCEPT
+          .                 {
+-- line 2218 ----------------------------------------
 
 --------------------------------------------------------------------------------
 -- Auto-annotated source: /petrobr/app_sequana/gcc/15.2.0/include/c++/15.2.0/bits/vector.tcc
@@ -647,402 +1043,6 @@ Ir
             .                   return 1;
             .               }
             9 ( 0.00%)  }
-
---------------------------------------------------------------------------------
--- Auto-annotated source: /petrobr/app_sequana/gcc/15.2.0/include/c++/15.2.0/bits/stl_vector.h
---------------------------------------------------------------------------------
-Ir                   
-
--- line 97 ----------------------------------------
-          .           
-          .                 struct _Vector_impl_data
-          .                 {
-          .           	pointer _M_start;
-          .           	pointer _M_finish;
-          .           	pointer _M_end_of_storage;
-          .           
-          .           	_GLIBCXX20_CONSTEXPR
-      5,623 ( 0.00%)  	_Vector_impl_data() _GLIBCXX_NOEXCEPT
-  1,783,075 ( 0.01%)  	: _M_start(), _M_finish(), _M_end_of_storage()
-          .           	{ }
-          .           
-          .           #if __cplusplus >= 201103L
-          .           	_GLIBCXX20_CONSTEXPR
-          .           	_Vector_impl_data(_Vector_impl_data&& __x) noexcept
-     23,524 ( 0.00%)  	: _M_start(__x._M_start), _M_finish(__x._M_finish),
-     23,524 ( 0.00%)  	  _M_end_of_storage(__x._M_end_of_storage)
-         75 ( 0.00%)  	{ __x._M_start = __x._M_finish = __x._M_end_of_storage = pointer(); }
-          .           #endif
-          .           
-          .           	_GLIBCXX20_CONSTEXPR
-          .           	void
-          .           	_M_copy_data(_Vector_impl_data const& __x) _GLIBCXX_NOEXCEPT
-          .           	{
-          .           	  _M_start = __x._M_start;
-          .           	  _M_finish = __x._M_finish;
--- line 122 ----------------------------------------
--- line 365 ----------------------------------------
-          .           
-          .                 _GLIBCXX20_CONSTEXPR
-          .                 _Vector_base(const allocator_type& __a, _Vector_base&& __x)
-          .                 : _M_impl(_Tp_alloc_type(__a), std::move(__x._M_impl))
-          .                 { }
-          .           #endif
-          .           
-          .                 _GLIBCXX20_CONSTEXPR
-          1 ( 0.00%)        ~_Vector_base() _GLIBCXX_NOEXCEPT
-          .                 {
-          .           	_M_deallocate(_M_impl._M_start,
-  1,786,285 ( 0.01%)  		      _M_impl._M_end_of_storage - _M_impl._M_start);
-          .                 }
-          .           
-          .               public:
-          .                 _Vector_impl _M_impl;
-          .           
-          .                 _GLIBCXX20_CONSTEXPR
-          .                 pointer
-          .                 _M_allocate(size_t __n)
-          .                 {
-          .           	typedef __gnu_cxx::__alloc_traits<_Tp_alloc_type> _Tr;
-  4,105,233 ( 0.03%)  	return __n != 0 ? _Tr::allocate(_M_impl, __n) : pointer();
-          .                 }
-          .           
-          .                 _GLIBCXX20_CONSTEXPR
-          .                 void
-          2 ( 0.00%)        _M_deallocate(pointer __p, size_t __n)
-          .                 {
-          .           	typedef __gnu_cxx::__alloc_traits<_Tp_alloc_type> _Tr;
-  1,968,370 ( 0.02%)  	if (__p)
-          .           	  _Tr::deallocate(_M_impl, __p, __n);
-          .                 }
-          .           
-          .               protected:
-          .           
-          .                 _GLIBCXX20_CONSTEXPR
-          .                 void
-          .                 _M_create_storage(size_t __n)
-          .                 {
-  2,350,532 ( 0.02%)  	this->_M_impl._M_start = this->_M_allocate(__n);
-          .           	this->_M_impl._M_finish = this->_M_impl._M_start;
-  4,690,337 ( 0.04%)  	this->_M_impl._M_end_of_storage = this->_M_impl._M_start + __n;
-          .                 }
-          .           
-          .           #if __glibcxx_containers_ranges // C++ >= 23
-          .                 // Called by insert_range, and indirectly by assign_range, append_range.
-          .                 // Initializes new elements in storage at __ptr and updates __ptr to
-          .                 // point after the last new element.
-          .                 // Provides strong exception safety guarantee.
-          .                 // Requires [ptr, ptr+distance(rg)) is a valid range.
--- line 415 ----------------------------------------
--- line 627 ----------------------------------------
-          .                  *  The newly-created %vector uses a copy of the allocator object used
-          .                  *  by @a __x (unless the allocator traits dictate a different object).
-          .                  */
-          .                 _GLIBCXX20_CONSTEXPR
-          .                 vector(const vector& __x)
-          .                 : _Base(__x.size(),
-          .           	_Alloc_traits::_S_select_on_copy(__x._M_get_Tp_allocator()))
-          .                 {
-        116 ( 0.00%)  	this->_M_impl._M_finish =
-          .           	  std::__uninitialized_copy_a(__x.begin(), __x.end(),
-          .           				      this->_M_impl._M_start,
-          .           				      _M_get_Tp_allocator());
-          .                 }
-          .           
-          .           #if __cplusplus >= 201103L
-          .                 /**
-          .                  *  @brief  %Vector move constructor.
--- line 643 ----------------------------------------
--- line 792 ----------------------------------------
-          .           
-          .                 /**
-          .                  *  The dtor only erases the elements, and note that if the
-          .                  *  elements themselves are pointers, the pointed-to memory is
-          .                  *  not touched in any way.  Managing the pointer is the user's
-          .                  *  responsibility.
-          .                  */
-          .                 _GLIBCXX20_CONSTEXPR
-          8 ( 0.00%)        ~vector() _GLIBCXX_NOEXCEPT
-          .                 {
-         10 ( 0.00%)  	std::_Destroy(this->_M_impl._M_start, this->_M_impl._M_finish,
-          .           		      _M_get_Tp_allocator());
-          .           	_GLIBCXX_ASAN_ANNOTATE_BEFORE_DEALLOC;
-          8 ( 0.00%)        }
-        104 ( 0.00%)  => /petrobr/app_sequana/gcc/15.2.0/include/c++/15.2.0/bits/stl_vector.h:std::_Vector_base<float, std::allocator<float> >::~_Vector_base() (1x)
-          .           
-          .                 /**
-          .                  *  @brief  %Vector assignment operator.
-          .                  *  @param  __x  A %vector of identical element and allocator types.
-          .                  *
-          .                  *  All the elements of @a __x are copied, but any unused capacity in
-          .                  *  @a __x will not be copied.
-          .                  *
--- line 813 ----------------------------------------
--- line 1109 ----------------------------------------
-          .                 crend() const noexcept
-          .                 { return const_reverse_iterator(begin()); }
-          .           #endif
-          .           
-          .                 // [23.2.4.2] capacity
-          .                 /**  Returns the number of elements in the %vector.  */
-          .                 _GLIBCXX_NODISCARD _GLIBCXX20_CONSTEXPR
-          .                 size_type
-         10 ( 0.00%)        size() const _GLIBCXX_NOEXCEPT
-          .                 {
-  6,674,763 ( 0.05%)  	ptrdiff_t __dif = this->_M_impl._M_finish - this->_M_impl._M_start;
-          .           	if (__dif < 0)
-          .           	   __builtin_unreachable ();
-          .           	return size_type(__dif);
-          .                 }
-          .           
-          .                 /**  Returns the size() of the largest possible %vector.  */
-          .                 _GLIBCXX_NODISCARD _GLIBCXX20_CONSTEXPR
-          .                 size_type
--- line 1127 ----------------------------------------
--- line 1137 ----------------------------------------
-          .                  *  number of elements.  If the number is smaller than the
-          .                  *  %vector's current size the %vector is truncated, otherwise
-          .                  *  default constructed elements are appended.
-          .                  */
-          .                 _GLIBCXX20_CONSTEXPR
-          .                 void
-          .                 resize(size_type __new_size)
-          .                 {
-  1,186,011 ( 0.01%)  	if (__new_size > size())
-         12 ( 0.00%)  	  _M_default_append(__new_size - size());
-        574 ( 0.00%)  => /petrobr/app_sequana/gcc/15.2.0/include/c++/15.2.0/bits/vector.tcc:std::vector<float, std::allocator<float> >::_M_default_append(unsigned long) (3x)
-  1,765,530 ( 0.01%)  	else if (__new_size < size())
-          .           	  _M_erase_at_end(this->_M_impl._M_start + __new_size);
-          .                 }
-          .           
-          .                 /**
-          .                  *  @brief  Resizes the %vector to the specified number of elements.
-          .                  *  @param  __new_size  Number of elements the %vector should contain.
-          .                  *  @param  __x  Data with which new elements should be populated.
-          .                  *
--- line 1155 ----------------------------------------
--- line 1203 ----------------------------------------
-          .                  *  Returns the total number of elements that the %vector can
-          .                  *  hold before needing to allocate more memory.
-          .                  */
-          .                 _GLIBCXX_NODISCARD _GLIBCXX20_CONSTEXPR
-          .                 size_type
-          .                 capacity() const _GLIBCXX_NOEXCEPT
-          .                 {
-          .           	ptrdiff_t __dif = this->_M_impl._M_end_of_storage
-  1,770,930 ( 0.01%)  			  - this->_M_impl._M_start;
-          .           	if (__dif < 0)
-          .           	   __builtin_unreachable ();
-          .           	return size_type(__dif);
-          .                 }
-          .           
-          .                 /**
-          .                  *  Returns true if the %vector is empty.  (Thus begin() would
-          .                  *  equal end().)
--- line 1219 ----------------------------------------
--- line 1256 ----------------------------------------
-          .                  *  out_of_range lookups are not defined. (For checked lookups
-          .                  *  see at().)
-          .                  */
-          .                 _GLIBCXX_NODISCARD _GLIBCXX20_CONSTEXPR
-          .                 reference
-          .                 operator[](size_type __n) _GLIBCXX_NOEXCEPT
-          .                 {
-          .           	__glibcxx_requires_subscript(__n);
-155,386,362 ( 1.21%)  	return *(this->_M_impl._M_start + __n);
-          .                 }
-          .           
-          .                 /**
-          .                  *  @brief  Subscript access to the data contained in the %vector.
-          .                  *  @param __n The index of the element for which data should be
-          .                  *  accessed.
-          .                  *  @return  Read-only (constant) reference to data.
-          .                  *
--- line 1272 ----------------------------------------
--- line 1275 ----------------------------------------
-          .                  *  out_of_range lookups are not defined. (For checked lookups
-          .                  *  see at().)
-          .                  */
-          .                 _GLIBCXX_NODISCARD _GLIBCXX20_CONSTEXPR
-          .                 const_reference
-          .                 operator[](size_type __n) const _GLIBCXX_NOEXCEPT
-          .                 {
-          .           	__glibcxx_requires_subscript(__n);
-  6,348,753 ( 0.05%)  	return *(this->_M_impl._M_start + __n);
-          .                 }
-          .           
-          .               protected:
-          .                 /// Safety check used only from at().
-          .                 _GLIBCXX20_CONSTEXPR
-          .                 void
-          .                 _M_range_check(size_type __n) const
-          .                 {
--- line 1291 ----------------------------------------
--- line 1874 ----------------------------------------
-          .           	_GLIBCXX20_CONSTEXPR
-          .           	_Guard_alloc(pointer __s, size_type __l, _Base& __vect)
-          .           	: _M_storage(__s), _M_len(__l), _M_vect(__vect)
-          .           	{ }
-          .           
-          .           	_GLIBCXX20_CONSTEXPR
-          .           	~_Guard_alloc()
-          .           	{
-     78,762 ( 0.00%)  	  if (_M_storage)
-          .           	    _M_vect._M_deallocate(_M_storage, _M_len);
-          .           	}
-          .           
-          .           	_GLIBCXX20_CONSTEXPR
-          .           	pointer
-          .           	_M_release()
-          .           	{
-          .           	  pointer __res = _M_storage;
--- line 1890 ----------------------------------------
--- line 1991 ----------------------------------------
-          .           	}
-          .           
-          .                 // Called by the first initialize_dispatch above and by the
-          .                 // vector(n,value,a) constructor.
-          .                 _GLIBCXX20_CONSTEXPR
-          .                 void
-          .                 _M_fill_initialize(size_type __n, const value_type& __value)
-          .                 {
-          6 ( 0.00%)  	this->_M_impl._M_finish =
-          .           	  std::__uninitialized_fill_n_a(this->_M_impl._M_start, __n, __value,
-          .           					_M_get_Tp_allocator());
-          .                 }
-          .           
-          .           #if __cplusplus >= 201103L
-          .                 // Called by the vector(n) constructor.
-          .                 _GLIBCXX20_CONSTEXPR
-          .                 void
-          .                 _M_default_initialize(size_type __n)
-          .                 {
-  1,765,543 ( 0.01%)  	this->_M_impl._M_finish =
-          .           	  std::__uninitialized_default_n_a(this->_M_impl._M_start, __n,
-          .           					   _M_get_Tp_allocator());
-          .                 }
-          .           #endif
-          .           
-          .                 // Internal assign functions follow.  The *_aux functions do the actual
-          .                 // assignment work for the range versions.
-          .           
--- line 2018 ----------------------------------------
--- line 2191 ----------------------------------------
-          .                 { return _M_insert_rval(__position, std::move(__v)); }
-          .           #endif
-          .           
-          .                 // Called by _M_fill_insert, _M_insert_aux etc.
-          .                 _GLIBCXX20_CONSTEXPR
-          .                 size_type
-          .                 _M_check_len(size_type __n, const char* __s) const
-          .                 {
-    118,159 ( 0.00%)  	if (max_size() - size() < __n)
-          .           	  __throw_length_error(__N(__s));
-          .           
-     78,726 ( 0.00%)  	const size_type __len = size() + (std::max)(size(), __n);
-    118,145 ( 0.00%)  	return (__len < size() || __len > max_size()) ? max_size() : __len;
-          .                 }
-          .           
-          .                 // Called by constructors to check initial size.
-          .                 static _GLIBCXX20_CONSTEXPR size_type
-          .                 _S_check_init_len(size_type __n, const allocator_type& __a)
-          .                 {
-  5,849,217 ( 0.05%)  	if (__n > _S_max_size(_Tp_alloc_type(__a)))
-          .           	  __throw_length_error(
-          .           	      __N("cannot create std::vector larger than max_size()"));
-          .           	return __n;
-          .                 }
-          .           
-          .                 static _GLIBCXX20_CONSTEXPR size_type
-          .                 _S_max_size(const _Tp_alloc_type& __a) _GLIBCXX_NOEXCEPT
-          .                 {
--- line 2218 ----------------------------------------
-
---------------------------------------------------------------------------------
--- Auto-annotated source: /petrobr/app_sequana/gcc/15.2.0/include/c++/15.2.0/bits/new_allocator.h
---------------------------------------------------------------------------------
-Ir                  
-
--- line 118 ----------------------------------------
-         .           #else
-         .           # define _GLIBCXX_OPERATOR_NEW ::operator new
-         .           # define _GLIBCXX_OPERATOR_DELETE ::operator delete
-         .           #endif
-         .           
-         .                 // NB: __n is permitted to be 0.  The C++ standard says nothing
-         .                 // about what the return value is when __n == 0.
-         .                 _GLIBCXX_NODISCARD _Tp*
-   584,925 ( 0.00%)        allocate(size_type __n, const void* = static_cast<const void*>(0))
-         .                 {
-         .           #if __cplusplus >= 201103L
-         .           	// _GLIBCXX_RESOLVE_LIB_DEFECTS
-         .           	// 3308. std::allocator<void>().allocate(n)
-         .           	static_assert(sizeof(_Tp) != 0, "cannot allocate incomplete types");
-         .           #endif
-         .           
-         .           	if (__builtin_expect(__n > this->_M_max_size(), false))
--- line 134 ----------------------------------------
--- line 143 ----------------------------------------
-         .           #if __cpp_aligned_new && __cplusplus >= 201103L
-         .           	if (alignof(_Tp) > __STDCPP_DEFAULT_NEW_ALIGNMENT__)
-         .           	  {
-         .           	    std::align_val_t __al = std::align_val_t(alignof(_Tp));
-         .           	    return static_cast<_Tp*>(_GLIBCXX_OPERATOR_NEW(__n * sizeof(_Tp),
-         .           							   __al));
-         .           	  }
-         .           #endif
-12,507,448 ( 0.10%)  	return static_cast<_Tp*>(_GLIBCXX_OPERATOR_NEW(__n * sizeof(_Tp)));
-    14,783 ( 0.00%)  => /home/carlos.abreu2/gcc/gcc-15.2.0/gcc-15.2.0_build/x86_64-pc-linux-gnu/libstdc++-v3/libsupc++/../../../../gcc-15.2.0/libstdc++-v3/libsupc++/new_op.cc:operator new(unsigned long) (67x)
-         .                 }
-         .           
-         .                 // __p is not permitted to be a null pointer.
-         .                 void
-         3 ( 0.00%)        deallocate(_Tp* __p, size_type __n __attribute__ ((__unused__)))
-         .                 {
-         .           #if __cpp_sized_deallocation
-         .           # define _GLIBCXX_SIZED_DEALLOC(p, n) (p), (n) * sizeof(_Tp)
-         .           #else
-         .           # define _GLIBCXX_SIZED_DEALLOC(p, n) (p)
-         .           #endif
-         .           
-         .           #if __cpp_aligned_new && __cplusplus >= 201103L
-         .           	if (alignof(_Tp) > __STDCPP_DEFAULT_NEW_ALIGNMENT__)
-         .           	  {
-         .           	    _GLIBCXX_OPERATOR_DELETE(_GLIBCXX_SIZED_DEALLOC(__p, __n),
-         .           				     std::align_val_t(alignof(_Tp)));
-         .           	    return;
-         .           	  }
-         .           #endif
- 6,671,802 ( 0.05%)  	_GLIBCXX_OPERATOR_DELETE(_GLIBCXX_SIZED_DEALLOC(__p, __n));
-        96 ( 0.00%)  => /home/carlos.abreu2/gcc/gcc-15.2.0/gcc-15.2.0_build/x86_64-pc-linux-gnu/libstdc++-v3/libsupc++/../../../../gcc-15.2.0/libstdc++-v3/libsupc++/del_ops.cc:operator delete(void*, unsigned long) (1x)
-         .                 }
-         .           
-         .           #undef _GLIBCXX_SIZED_DEALLOC
-         .           #undef _GLIBCXX_OPERATOR_DELETE
-         .           #undef _GLIBCXX_OPERATOR_NEW
-         .           
-         .           #if __cplusplus <= 201703L
-         .                 __attribute__((__always_inline__))
--- line 180 ----------------------------------------
--- line 183 ----------------------------------------
-         .                 { return _M_max_size(); }
-         .           
-         .           #if __cplusplus >= 201103L
-         .                 template<typename _Up, typename... _Args>
-         .           	__attribute__((__always_inline__))
-         .           	void
-         .           	construct(_Up* __p, _Args&&... __args)
-         .           	noexcept(__is_nothrow_new_constructible<_Up, _Args...>)
-   438,539 ( 0.00%)  	{ ::new((void *)__p) _Up(std::forward<_Args>(__args)...); }
-         .           
-         .                 template<typename _Up>
-         .           	__attribute__((__always_inline__))
-         .           	void
-         .           	destroy(_Up* __p)
-         .           	noexcept(std::is_nothrow_destructible<_Up>::value)
-         .           	{ __p->~_Up(); }
-         .           #else
--- line 199 ----------------------------------------
 
 --------------------------------------------------------------------------------
 -- Auto-annotated source: /petrobr/app_sequana/gcc/15.2.0/include/c++/15.2.0/bits/stl_algobase.h
