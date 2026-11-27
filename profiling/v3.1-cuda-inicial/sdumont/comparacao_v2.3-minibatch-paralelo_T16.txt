@@ -1,0 +1,6 @@
+A=profiling/v2.3-minibatch-paralelo/sdumont/barenn
+B=profiling/v3.1-cuda-inicial/sdumont/barenn_cuda
+reps=20 pin=nenhum data=2026-11-27T20:22:15-03:00 no=sdumont8043
+A: media=0.1994 desvio=0.0054 mediana=0.1978 min=0.1952 max=0.2201 n=20
+B: media=0.1497 desvio=0.0040 mediana=0.1486 min=0.1482 max=0.1672 n=20
+speedup (mediana A/B) = 1.331x   (minimo A/B) = 1.317x

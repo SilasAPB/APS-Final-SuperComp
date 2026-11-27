@@ -1,0 +1,16 @@
+barenn.cpp(490): warning #940-D: missing return statement at end of non-void function "main_cpu"
+  }
+  ^
+
+Remark: The warnings can be suppressed with "-diag-suppress <warning-number>"
+
+barenn.cpp(490): warning #940-D: missing return statement at end of non-void function "main_cpu"
+  }
+  ^
+
+Remark: The warnings can be suppressed with "-diag-suppress <warning-number>"
+
+barenn.cpp: In function ‘int main_cpu(int, char**)’:
+barenn.cpp:416:90: warning: control reaches end of non-void function [-Wreturn-type]
+     const string arquivo_treino = argc == 3 ? argv[1] : "data/optdigits.tra";
+                                                                                          ^

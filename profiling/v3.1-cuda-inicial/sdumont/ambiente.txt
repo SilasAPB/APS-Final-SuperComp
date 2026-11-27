@@ -1,0 +1,11 @@
+2026-11-27T20:21:31-03:00
+no: sdumont8043
+md5 fonte: d2d9697f5e05
+Cuda compilation tools, release 12.6, V12.6.77
+Build cuda_12.6.r12.6/compiler.34841621_0
+flags: nvcc -O2 -std=c++17 --fmad=false -arch=sm_70 -lstdc++fs
+gpu: Tesla V100-SXM2-32GB, 7.0, 32768 MiB, 560.35.03
+nsys: NVIDIA Nsight Systems version 2024.5.1.113-245134619542v0
+ncu: Version 2024.3.2.0 (build 34861637) (public-release)
+CPU(s):              48
+Model name:          Intel(R) Xeon(R) Gold 6252 CPU @ 2.10GHz
