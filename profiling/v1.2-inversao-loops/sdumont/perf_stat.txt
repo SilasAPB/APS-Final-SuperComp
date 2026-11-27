@@ -1,0 +1,11 @@
+no=sdumont6165 reps=5
+
+ Performance counter stats for 'profiling/v1.2-inversao-loops/sdumont/barenn' (5 runs):
+
+     4,192,348,618      cycles                                                        ( +-  0.05% )
+    12,189,599,648      instructions              #    2.91  insn per cycle           ( +-  0.00% )
+         6,695,095      branch-misses                                                 ( +-  0.44% )
+         1,712,973      L1-dcache-load-misses                                         ( +-  2.52% )
+
+          1.138040 +- 0.000591 seconds time elapsed  ( +-  0.05% )
+

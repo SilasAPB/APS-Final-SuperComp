@@ -1,0 +1,6 @@
+A=profiling/v1.1-vetores-por-referencia/sdumont/barenn
+B=profiling/v1.2-inversao-loops/sdumont/barenn
+reps=20 pin=nenhum data=2026-11-27T08:17:47-03:00 no=sdumont6165
+A: media=1.2599 desvio=0.0044 mediana=1.2572 min=1.2563 max=1.2685 n=20
+B: media=1.0870 desvio=0.0040 mediana=1.0869 min=1.0812 max=1.0998 n=20
+speedup (mediana A/B) = 1.157x   (minimo A/B) = 1.162x
