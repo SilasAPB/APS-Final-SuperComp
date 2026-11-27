@@ -6,6 +6,7 @@
 set -euo pipefail
 cd "$(dirname "${BASH_SOURCE[0]}")/.."
 A="$1"; B="$2"; REPS="${3:-20}"; OUTF="${4:-/dev/stdout}"
+for b in "$A" "$B"; do [ -x "$b" ] || { echo "ERRO: binario nao encontrado ou sem permissao de execucao: $b" >&2; exit 1; }; done
 RUN=(); [ -n "${PIN:-}" ] && RUN=(taskset -c "$PIN")
 
 TMP="$(mktemp)"

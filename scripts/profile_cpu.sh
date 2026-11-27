@@ -29,7 +29,7 @@ else
   GIT_INFO="git: indisponivel neste no"
 fi
 { date -Is; echo "no: $NODE"; echo "$GIT_INFO"; echo "md5 fonte: $(md5sum < "$SRC" | cut -c1-12)"
-  g++ --version | head -1; valgrind --version; echo "flags: -O2 -std=c++17 $EXTRA $LIBS"; env | grep -E "^OMP_" | sed "s/^/env: /"; echo "fonte: $SRC"
+  g++ --version | head -1; valgrind --version; echo "flags: -O2 -std=c++17 $EXTRA $LIBS"; (env | grep -E "^OMP_" || true) | sed "s/^/env: /"; echo "fonte: $SRC"
   lscpu | grep -E 'Model name|^CPU\(s\)|L1d|L2|L3'; } > "$OUT/ambiente.txt" 2>&1
 
 # compilacao (-g so para dar nomes ao callgrind)
