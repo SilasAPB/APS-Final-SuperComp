@@ -32,6 +32,14 @@ awk '{s+=$1; ss+=$1*$1} END{m=s/NR; printf "media=%.4f desvio=%.4f n=%d\n", m, s
   "$OUT/tempos.txt" >> "$OUT/tempos.txt"
 cat "$OUT/tempos.txt"
 
+# contadores de hardware (ciclos, IPC, branch-misses): so se houver perf no no
+if command -v perf >/dev/null 2>&1; then
+  { echo "no=$NODE reps=5"
+    perf stat -r 5 -e cycles,instructions,branch-misses,L1-dcache-load-misses "$OUT/barenn" 2>&1 >/dev/null
+  } > "$OUT/perf_stat.txt" || true
+  cat "$OUT/perf_stat.txt"
+fi
+
 # valgrind e callgrind
 valgrind --leak-check=full "$OUT/barenn_g" > /dev/null 2> "$OUT/memcheck.txt" || true
 valgrind --tool=callgrind --cache-sim=yes --callgrind-out-file="$OUT/callgrind.out" \
