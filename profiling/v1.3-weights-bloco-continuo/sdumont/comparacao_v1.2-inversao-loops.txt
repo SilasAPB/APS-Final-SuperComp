@@ -1,0 +1,6 @@
+A=profiling/v1.2-inversao-loops/sdumont/barenn
+B=profiling/v1.3-weights-bloco-continuo/sdumont/barenn
+reps=20 pin=nenhum data=2026-11-27T09:04:21-03:00 no=sdumont6165
+A: media=1.0854 desvio=0.0023 mediana=1.0867 min=1.0808 max=1.0878 n=20
+B: media=0.9670 desvio=0.0008 mediana=0.9667 min=0.9661 max=0.9696 n=20
+speedup (mediana A/B) = 1.124x   (minimo A/B) = 1.119x
