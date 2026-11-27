@@ -1,0 +1,5 @@
+T=1 identica_a_A=SIM deterministica=SIM acuracia=96.2% (1729 acertos)
+T=2 identica_a_A=NAO deterministica=SIM acuracia=96.2% (1729 acertos)
+T=4 identica_a_A=NAO deterministica=SIM acuracia=96.2% (1728 acertos)
+T=8 identica_a_A=NAO deterministica=SIM acuracia=96.2% (1728 acertos)
+T=16 identica_a_A=NAO deterministica=SIM acuracia=96.2% (1729 acertos)

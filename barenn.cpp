@@ -7,12 +7,22 @@
 #include <fstream>
 #include <iomanip>
 #include <iostream>
+#include <memory>
 #include <random>
 #include <sstream>
 #include <stdexcept>
 #include <string>
 #include <utility>
 #include <vector>
+
+// Paralelismo multicore com OpenMP. Sem -fopenmp o programa continua sequencial.
+#ifdef _OPENMP
+#include <omp.h>
+// Com uma thread só, a barreira é dispensada (evita o custo da chamada da biblioteca).
+#define BARENN_BARREIRA if (T > 1) { _Pragma("omp barrier") }
+#else
+#define BARENN_BARREIRA
+#endif
 
 using namespace std;
 
@@ -22,8 +32,19 @@ namespace Barenn {
 constexpr int entradas = 64;
 constexpr int classes = 10;
 
+// Espaço de trabalho de uma camada para UMA thread: ativações, delta, gradiente da entrada
+// e os acumuladores de gradiente do lote (dW, db).
+struct CamadaWS {
+    vector<float> z, out, delta, grad_in, dW, db;
+    const float* in = nullptr;
+    CamadaWS(int entradas, int saidas, size_t n_pesos)
+        : z(saidas), out(saidas), delta(saidas), grad_in(entradas),
+          dW(n_pesos, 0.0f), db(saidas, 0.0f) {}
+};
+
+// Camada densa: guarda só os pesos e o viés, que são somente leitura durante o cálculo
+// de um lote. Todo o estado que muda por amostra fica no CamadaWS de cada thread.
 class DenseLayer {
-    static constexpr int max_saidas = 32;
     int in_features;
     int out_features;
     bool final;
@@ -31,27 +52,11 @@ class DenseLayer {
     // Matriz achatada: um único bloco contíguo, linha a linha.
     vector<float> weights;
     vector<float> bias;
-    // Gradientes acumulados ao longo do lote (os pesos só mudam no fim dele).
-    vector<float> dW;
-    vector<float> db;
-    // Buffers fixos: soma antes da ativação, saída, delta e gradiente da entrada.
-    vector<float> last_z;
-    vector<float> out_;
-    vector<float> delta_;
-    vector<float> grad_in_;
-    // Entrada do último forward (aponta para o buffer da camada anterior ou da amostra).
-    const float* last_in_ = nullptr;
 
 public:
     DenseLayer(int input_size, int output_size, bool is_final = false)
         : in_features(input_size), out_features(output_size), final(is_final),
-          weights(static_cast<size_t>(output_size) * input_size), bias(output_size, 0),
-          dW(static_cast<size_t>(output_size) * input_size, 0.0f), db(output_size, 0.0f),
-          last_z(output_size), out_(output_size), delta_(output_size),
-          grad_in_(input_size) {
-        if (output_size > max_saidas) {
-            throw runtime_error("DenseLayer: no máximo 32 neurônios por camada");
-        }
+          weights(static_cast<size_t>(output_size) * input_size), bias(output_size, 0) {
         // A semente fixa torna a inicialização de cada camada reproduzível.
         mt19937 gen(1337);
         uniform_real_distribution<float> distribution(-0.05f, 0.05f);
@@ -60,13 +65,16 @@ public:
         }
     }
 
-    const float* saida() const { return out_.data(); }
-    const float* grad_in() const { return grad_in_.data(); }
+    int entradas() const { return in_features; }
+    int saidas() const { return out_features; }
+    size_t n_pesos() const { return weights.size(); }
+    float* pesos() { return weights.data(); }
+    float* vies() { return bias.data(); }
 
     // Calcula os neurônios [n0, n1). Cada neurônio soma o viés aos produtos entre
     // entradas e pesos em ordem crescente de j, quatro neurônios por vez, cada um
     // com seu acumulador (as cadeias de soma ficam independentes).
-    void ForwardRange(const float* input, int n0, int n1) {
+    void ForwardRange(const float* input, CamadaWS& ws, int n0, int n1) const {
         int i = n0;
         for (; i + 4 <= n1; i += 4) {
             float s0 = bias[i], s1 = bias[i + 1], s2 = bias[i + 2], s3 = bias[i + 3];
@@ -83,9 +91,9 @@ public:
             }
             const float sums[4] = {s0, s1, s2, s3};
             for (int k = 0; k < 4; ++k) {
-                last_z[i + k] = sums[k];
+                ws.z[i + k] = sums[k];
                 // As camadas ocultas usam ReLU. A última devolve escores lineares.
-                out_[i + k] = final ? sums[k] : max(0.0f, sums[k]);
+                ws.out[i + k] = final ? sums[k] : max(0.0f, sums[k]);
             }
         }
         for (; i < n1; ++i) {
@@ -93,69 +101,69 @@ public:
             for (int j = 0; j < in_features; ++j) {
                 sum += input[j] * weights[i * in_features + j];
             }
-            last_z[i] = sum;
-            out_[i] = final ? sum : max(0.0f, sum);
+            ws.z[i] = sum;
+            ws.out[i] = final ? sum : max(0.0f, sum);
         }
     }
 
     // Forward sequencial (usado na avaliação).
-    vector<float> Forward(const vector<float>& input) {
-        ForwardRange(input.data(), 0, out_features);
-        return out_;
+    vector<float> Forward(const vector<float>& input) const {
+        CamadaWS ws(in_features, out_features, 0);
+        ForwardRange(input.data(), ws, 0, out_features);
+        return ws.out;
     }
 
     // Forward de treino: guarda a entrada, que o backward usa para o gradiente dos pesos.
-    void ForwardTreino(const float* input) {
-        last_in_ = input;
-        ForwardRange(input, 0, out_features);
+    void ForwardTreino(const float* input, CamadaWS& ws) const {
+        ws.in = input;
+        ForwardRange(input, ws, 0, out_features);
     }
 
     // Backward de uma amostra. Não altera os pesos: só acumula o gradiente do lote
-    // (dW, db) e calcula o gradiente da entrada, que usa os pesos do início do lote.
-    void Backward(const float* grad_out, bool need_grad_in) {
+    // (dW, db) no espaço da thread e calcula o gradiente da entrada.
+    void Backward(const float* grad_out, CamadaWS& ws, bool need_grad_in) const {
         // Delta é o gradiente da perda em relação à soma antes da ativação.
         // Na ReLU, o gradiente passa apenas quando essa soma é positiva.
         for (int i = 0; i < out_features; ++i) {
-            delta_[i] = final ? grad_out[i]
-                              : grad_out[i] * (last_z[i] > 0.0f ? 1.0f : 0.0f);
+            ws.delta[i] = final ? grad_out[i]
+                                : grad_out[i] * (ws.z[i] > 0.0f ? 1.0f : 0.0f);
         }
 
         if (need_grad_in) {
-            fill(grad_in_.begin(), grad_in_.end(), 0.0f);
+            fill(ws.grad_in.begin(), ws.grad_in.end(), 0.0f);
             for (int j = 0; j < out_features; ++j) {
-                const float d = delta_[j];
+                const float d = ws.delta[j];
                 if (d == 0.0f) continue;
                 const float* w = &weights[j * in_features];
                 for (int i = 0; i < in_features; ++i) {
-                    grad_in_[i] += d * w[i];
+                    ws.grad_in[i] += d * w[i];
                 }
             }
         }
 
         // O gradiente do peso é delta vezes a entrada; o do viés é o próprio delta.
         for (int i = 0; i < out_features; ++i) {
-            const float d = delta_[i];
+            const float d = ws.delta[i];
             if (d == 0.0f) continue;
-            float* g = &dW[i * in_features];
+            float* g = &ws.dW[i * in_features];
             for (int j = 0; j < in_features; ++j) {
-                g[j] += d * last_in_[j];
+                g[j] += d * ws.in[j];
             }
-            db[i] += d;
+            ws.db[i] += d;
         }
     }
+};
 
-    // Fim do lote: uma única atualização com o gradiente acumulado (k = taxa / amostras).
-    void AplicarLote(float k) {
-        const size_t n = weights.size();
-        for (size_t p = 0; p < n; ++p) {
-            weights[p] -= k * dW[p];
-            dW[p] = 0.0f;
-        }
-        for (int i = 0; i < out_features; ++i) {
-            bias[i] -= k * db[i];
-            db[i] = 0.0f;
-        }
-    }
+// Espaço de trabalho completo de uma thread (as três camadas). Alinhado a 64 bytes para
+// que os cabeçalhos de threads diferentes não dividam linhas de cache.
+struct alignas(64) Workspace {
+    CamadaWS c[3];
+    float gradiente[10];
+    Workspace(const DenseLayer& l1, const DenseLayer& l2, const DenseLayer& l3)
+        : c{CamadaWS(l1.entradas(), l1.saidas(), l1.n_pesos()),
+            CamadaWS(l2.entradas(), l2.saidas(), l2.n_pesos()),
+            CamadaWS(l3.entradas(), l3.saidas(), l3.n_pesos())},
+          gradiente{} {}
 };
 
 struct Amostra {
@@ -221,33 +229,87 @@ float perda(const vector<float>& escores, int rotulo) {
     return perda(escores.data(), rotulo);
 }
 
-// Treino por mini-batch: dentro de um lote os pesos não mudam e cada amostra só acumula
-// gradientes; ao fim do lote há uma única atualização, com o gradiente médio.
-void treinar(DenseLayer& l1, DenseLayer& l2, DenseLayer& l3, const vector<Amostra>& treino,
-             float taxa, size_t tamanho_lote, int epocas, double* perdas, float* gradiente) {
+// Atualiza os pesos de uma camada com o gradiente médio do lote. Cada elemento soma os
+// acumuladores das T threads na ordem fixa de thread 0 a T-1. Com `paralela`, cada thread
+// atualiza uma faixa dos pesos; senão, só a thread 0 atualiza todos.
+void atualizar_camada(DenseLayer& camada, int l, vector<unique_ptr<Workspace>>& wss,
+                      float k, int tid, int T, bool paralela) {
+    const size_t n = camada.n_pesos();
+    const size_t nb = camada.saidas();
+    size_t p0 = 0, p1 = n, b0 = 0, b1 = nb;
+    if (paralela) {
+        p0 = n * tid / T;     p1 = n * (tid + 1) / T;
+        b0 = nb * tid / T;    b1 = nb * (tid + 1) / T;
+    } else if (tid != 0) {
+        return;
+    }
+    float* W = camada.pesos();
+    float* B = camada.vies();
+    for (size_t p = p0; p < p1; ++p) {
+        float soma = wss[0]->c[l].dW[p];
+        for (int t = 1; t < T; ++t) soma += wss[t]->c[l].dW[p];
+        W[p] -= k * soma;
+    }
+    for (size_t i = b0; i < b1; ++i) {
+        float soma = wss[0]->c[l].db[i];
+        for (int t = 1; t < T; ++t) soma += wss[t]->c[l].db[i];
+        B[i] -= k * soma;
+    }
+}
+
+// Treino por mini-batch, executado por todas as threads de uma região OpenMP. Dentro de
+// um lote os pesos não mudam: cada thread processa uma faixa contígua das amostras do lote
+// e acumula gradientes no seu espaço; depois da barreira, os acumuladores são somados e os
+// pesos atualizados uma única vez; uma segunda barreira libera o lote seguinte.
+void treinar(int tid, int T, DenseLayer& l1, DenseLayer& l2, DenseLayer& l3,
+             vector<unique_ptr<Workspace>>& wss, double* parciais,
+             const vector<Amostra>& treino, float taxa, size_t tamanho_lote, int epocas,
+             double* perdas, bool atualizacao_paralela) {
+    // Cada thread cria o próprio espaço de trabalho (alocação local à thread).
+    wss[tid] = make_unique<Workspace>(l1, l2, l3);
+    BARENN_BARREIRA
+    Workspace& ws = *wss[tid];
+    DenseLayer* camadas[3] = {&l1, &l2, &l3};
+
     for (int epoca = 0; epoca < epocas; ++epoca) {
-        double perda_total = 0;
+        double perda_parcial = 0;
         // Uma época percorre todo o conjunto na ordem do arquivo.
         for (size_t inicio = 0; inicio < treino.size(); inicio += tamanho_lote) {
             const size_t fim = min(treino.size(), inicio + tamanho_lote);
-            for (size_t s = inicio; s < fim; ++s) {
+            const size_t nlote = fim - inicio;
+            // Zera os acumuladores da própria thread (a atualização só os lê).
+            for (auto& c : ws.c) {
+                fill(c.dW.begin(), c.dW.end(), 0.0f);
+                fill(c.db.begin(), c.db.end(), 0.0f);
+            }
+            const size_t s0 = inicio + nlote * tid / T;
+            const size_t s1 = inicio + nlote * (tid + 1) / T;
+            for (size_t s = s0; s < s1; ++s) {
                 const auto& amostra = treino[s];
-                l1.ForwardTreino(amostra.imagem.data());
-                l2.ForwardTreino(l1.saida());
-                l3.ForwardTreino(l2.saida());
-                perda_total += perda(l3.saida(), amostra.rotulo, gradiente);
+                l1.ForwardTreino(amostra.imagem.data(), ws.c[0]);
+                l2.ForwardTreino(ws.c[0].out.data(), ws.c[1]);
+                l3.ForwardTreino(ws.c[1].out.data(), ws.c[2]);
+                perda_parcial += perda(ws.c[2].out.data(), amostra.rotulo, ws.gradiente);
 
                 // Propaga o gradiente da última camada até a primeira.
-                l3.Backward(gradiente, true);
-                l2.Backward(l3.grad_in(), true);
-                l1.Backward(l2.grad_in(), false);
+                l3.Backward(ws.gradiente, ws.c[2], true);
+                l2.Backward(ws.c[2].grad_in.data(), ws.c[1], true);
+                l1.Backward(ws.c[1].grad_in.data(), ws.c[0], false);
             }
-            const float k = taxa / static_cast<float>(fim - inicio);
-            l1.AplicarLote(k);
-            l2.AplicarLote(k);
-            l3.AplicarLote(k);
+            BARENN_BARREIRA  // os gradientes do lote estão prontos
+            const float k = taxa / static_cast<float>(nlote);
+            for (int l = 0; l < 3; ++l) {
+                atualizar_camada(*camadas[l], l, wss, k, tid, T, atualizacao_paralela);
+            }
+            BARENN_BARREIRA  // os pesos novos estão prontos para o lote seguinte
         }
-        perdas[epoca] = perda_total / treino.size();
+        parciais[tid] = perda_parcial;
+        BARENN_BARREIRA
+        if (tid == 0) {
+            double total = 0;
+            for (int t = 0; t < T; ++t) total += parciais[t];
+            perdas[epoca] = total / treino.size();
+        }
     }
 }
 
@@ -385,13 +447,31 @@ int main(int argc, char** argv) {
         Barenn::DenseLayer l1(Barenn::entradas, 32);
         Barenn::DenseLayer l2(32, 16);
         Barenn::DenseLayer l3(16, Barenn::classes, true);
-        vector<float> gradiente(Barenn::classes);
         array<double, epocas> perdas{};
+
+        // Número de threads: OMP_NUM_THREADS (padrão 1). O posicionamento das threads fica
+        // por conta de OMP_PLACES e OMP_PROC_BIND. BARENN_ATUALIZACAO_SEQUENCIAL=1 faz só a
+        // thread 0 somar os gradientes e atualizar os pesos (para medir cada passo).
+        int threads = 1;
+        if (const char* env = getenv("OMP_NUM_THREADS")) threads = max(1, atoi(env));
+        const bool atualizacao_paralela = getenv("BARENN_ATUALIZACAO_SEQUENCIAL") == nullptr;
+        vector<unique_ptr<Barenn::Workspace>> wss(threads);
+        vector<double> parciais(threads, 0.0);
 
         // A medição inclui forward, perda, backward e atualização de todas as épocas.
         const auto inicio = chrono::steady_clock::now();
-        Barenn::treinar(l1, l2, l3, treino, taxa, tamanho_lote, epocas,
-                        perdas.data(), gradiente.data());
+#pragma omp parallel num_threads(threads)
+        {
+#ifdef _OPENMP
+            const int tid = omp_get_thread_num();
+            const int T = omp_get_num_threads();
+#else
+            const int tid = 0;
+            const int T = 1;
+#endif
+            Barenn::treinar(tid, T, l1, l2, l3, wss, parciais.data(), treino, taxa,
+                            tamanho_lote, epocas, perdas.data(), atualizacao_paralela);
+        }
         const chrono::duration<double> tempo = chrono::steady_clock::now() - inicio;
 
         // Imprime as métricas e roda a avaliação após encerrar o cronômetro.

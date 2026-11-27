@@ -1,0 +1,11 @@
+no=sdumont6169 reps=5
+
+ Performance counter stats for 'profiling/v2.3-minibatch-paralelo/sdumont/barenn' (5 runs):
+
+     1,961,959,473      cycles                                                        ( +-  0.02% )
+     5,390,723,865      instructions              #    2.75  insn per cycle           ( +-  0.00% )
+         9,976,147      branch-misses                                                 ( +-  0.12% )
+         3,420,702      L1-dcache-load-misses                                         ( +- 13.37% )
+
+           0.56738 +- 0.00447 seconds time elapsed  ( +-  0.79% )
+
