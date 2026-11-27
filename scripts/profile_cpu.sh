@@ -16,9 +16,15 @@ mkdir -p "$OUT"
 LIBS=""
 [ "$(g++ -dumpversion | cut -d. -f1)" -lt 9 ] && LIBS="-lstdc++fs"
 
-# ambiente
-{ date -Is; echo "no: $NODE"; echo "branch: $(git rev-parse --abbrev-ref HEAD) @ $(git rev-parse --short HEAD)"; echo "md5 fonte: $(md5sum < "$SRC" | cut -c1-12)"; git describe --tags --always --dirty; g++ --version | head -1
-  valgrind --version; echo "flags: -O2 -std=c++17 $LIBS"; echo "fonte: $SRC"
+# ambiente (git pode nao estar no PATH do job: nesse caso o md5 da fonte continua provando o que rodou)
+if command -v git >/dev/null 2>&1; then
+  GIT_INFO="branch: $(git rev-parse --abbrev-ref HEAD) @ $(git rev-parse --short HEAD)
+$(git describe --tags --always --dirty)"
+else
+  GIT_INFO="git: indisponivel neste no"
+fi
+{ date -Is; echo "no: $NODE"; echo "$GIT_INFO"; echo "md5 fonte: $(md5sum < "$SRC" | cut -c1-12)"
+  g++ --version | head -1; valgrind --version; echo "flags: -O2 -std=c++17 $LIBS"; echo "fonte: $SRC"
   lscpu | grep -E 'Model name|^CPU\(s\)|L1d|L2|L3'; } > "$OUT/ambiente.txt" 2>&1
 
 # compilacao (-g so para dar nomes ao callgrind)
