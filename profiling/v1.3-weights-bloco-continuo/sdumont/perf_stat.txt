@@ -1,0 +1,11 @@
+no=sdumont6165 reps=5
+
+ Performance counter stats for 'profiling/v1.3-weights-bloco-continuo/sdumont/barenn' (5 runs):
+
+     3,753,146,808      cycles                                                        ( +-  0.09% )
+    12,628,968,722      instructions              #    3.36  insn per cycle           ( +-  0.00% )
+         5,457,642      branch-misses                                                 ( +-  1.10% )
+         1,369,608      L1-dcache-load-misses                                         ( +-  1.13% )
+
+          1.019001 +- 0.000947 seconds time elapsed  ( +-  0.09% )
+
