@@ -1,0 +1,11 @@
+no=sdumont6036 reps=5
+
+ Performance counter stats for 'profiling/v1.5-grad-in-primeira-camada/sdumont/barenn' (5 runs):
+
+     2,376,869,397      cycles                                                        ( +-  0.18% )
+     5,990,240,509      instructions              #    2.52  insn per cycle           ( +-  0.00% )
+         8,856,683      branch-misses                                                 ( +-  0.48% )
+         1,378,175      L1-dcache-load-misses                                         ( +-  0.76% )
+
+           0.66879 +- 0.00113 seconds time elapsed  ( +-  0.17% )
+

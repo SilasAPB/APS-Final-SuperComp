@@ -1,0 +1,6 @@
+A=profiling/v1.4-esparsidade-relu/sdumont/barenn
+B=profiling/v1.5-grad-in-primeira-camada/sdumont/barenn
+reps=20 pin=nenhum data=2026-11-27T14:25:05-03:00 no=sdumont6036
+A: media=0.7077 desvio=0.0051 mediana=0.7069 min=0.7000 max=0.7258 n=20
+B: media=0.6166 desvio=0.0024 mediana=0.6168 min=0.6110 max=0.6222 n=20
+speedup (mediana A/B) = 1.146x   (minimo A/B) = 1.146x
