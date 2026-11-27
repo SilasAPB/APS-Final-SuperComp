@@ -12,6 +12,11 @@ case "$NODE" in sdumont*) ENV_NAME="sdumont" ;; *) ENV_NAME="$NODE" ;; esac  # n
 OUT="profiling/$LABEL/$ENV_NAME"
 mkdir -p "$OUT"
 
+# flags extras opcionais (CXXFLAGS_EXTRA)
+EXTRA="${CXXFLAGS_EXTRA:-}"
+# fontes com OpenMP sao compiladas com -fopenmp automaticamente (sem ele rodariam sequenciais)
+grep -q '#pragma omp' "$SRC" && EXTRA="$EXTRA -fopenmp"
+
 # gcc < 9 (ex.: padrao do SD) precisa de -lstdc++fs para std::filesystem
 LIBS=""
 [ "$(g++ -dumpversion | cut -d. -f1)" -lt 9 ] && LIBS="-lstdc++fs"
@@ -24,12 +29,12 @@ else
   GIT_INFO="git: indisponivel neste no"
 fi
 { date -Is; echo "no: $NODE"; echo "$GIT_INFO"; echo "md5 fonte: $(md5sum < "$SRC" | cut -c1-12)"
-  g++ --version | head -1; valgrind --version; echo "flags: -O2 -std=c++17 $LIBS"; echo "fonte: $SRC"
+  g++ --version | head -1; valgrind --version; echo "flags: -O2 -std=c++17 $EXTRA $LIBS"; (env | grep -E "^OMP_" || true) | sed "s/^/env: /"; echo "fonte: $SRC"
   lscpu | grep -E 'Model name|^CPU\(s\)|L1d|L2|L3'; } > "$OUT/ambiente.txt" 2>&1
 
 # compilacao (-g so para dar nomes ao callgrind)
-g++ -O2 -std=c++17    "$SRC" -o "$OUT/barenn"   $LIBS
-g++ -O2 -std=c++17 -g "$SRC" -o "$OUT/barenn_g" $LIBS
+g++ -O2 -std=c++17    $EXTRA "$SRC" -o "$OUT/barenn"   $LIBS
+g++ -O2 -std=c++17 -g $EXTRA "$SRC" -o "$OUT/barenn_g" $LIBS
 
 # saida de referencia (para diff nas proximas versoes) + tempos; ultima linha = resumo
 "$OUT/barenn" | grep -v '^Tempo de treino' > "$OUT/saida.txt"
@@ -47,8 +52,8 @@ if command -v perf >/dev/null 2>&1; then
 fi
 
 # valgrind e callgrind
-valgrind --leak-check=full "$OUT/barenn_g" > /dev/null 2> "$OUT/memcheck.txt" || true
-valgrind --tool=callgrind --cache-sim=yes --callgrind-out-file="$OUT/callgrind.out" \
+OMP_NUM_THREADS=1 valgrind --leak-check=full "$OUT/barenn_g" > /dev/null 2> "$OUT/memcheck.txt" || true
+OMP_NUM_THREADS=1 valgrind --tool=callgrind --cache-sim=yes --callgrind-out-file="$OUT/callgrind.out" \
   "$OUT/barenn_g" > /dev/null 2> /dev/null
 # legivel: so instrucoes (Ir) + codigo-fonte anotado linha a linha
 callgrind_annotate --show=Ir "$OUT/callgrind.out" "$SRC" > "$OUT/callgrind_annotate.txt"

@@ -1,0 +1,11 @@
+no=sdumont6169 reps=5
+
+ Performance counter stats for 'profiling/v2.1-paralelismo-cpu/sdumont/barenn' (5 runs):
+
+     1,963,020,919      cycles                                                        ( +-  0.02% )
+     5,397,727,095      instructions              #    2.75  insn per cycle           ( +-  0.00% )
+         8,867,432      branch-misses                                                 ( +-  0.19% )
+         1,311,960      L1-dcache-load-misses                                         ( +-  0.48% )
+
+          0.537370 +- 0.000389 seconds time elapsed  ( +-  0.07% )
+
