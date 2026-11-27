@@ -1,0 +1,11 @@
+no=sdumont6036 reps=5
+
+ Performance counter stats for 'profiling/v1.4-esparsidade-relu/sdumont/barenn' (5 runs):
+
+     2,696,663,140      cycles                                                        ( +-  0.06% )
+     7,046,861,962      instructions              #    2.61  insn per cycle           ( +-  0.00% )
+        11,560,353      branch-misses                                                 ( +-  0.22% )
+         1,376,204      L1-dcache-load-misses                                         ( +-  0.37% )
+
+           0.75629 +- 0.00302 seconds time elapsed  ( +-  0.40% )
+

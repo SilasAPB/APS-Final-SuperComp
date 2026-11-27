@@ -1,0 +1,14 @@
+2026-11-27T13:15:34-03:00
+no: sdumont6036
+branch: perf/esparsidade-relu @ 635e929
+v1.3-weights-bloco-continuo-2-g635e929
+md5 fonte: 4b23b57fd314
+g++ (GCC) 15.2.0
+valgrind-3.19.0
+flags: -O2 -std=c++17 
+fonte: barenn.cpp
+CPU(s):              48
+Model name:          Intel(R) Xeon(R) Gold 6252 CPU @ 2.10GHz
+L1d cache:           32K
+L2 cache:            1024K
+L3 cache:            36608K

@@ -1,0 +1,6 @@
+A=profiling/v1.3-weights-bloco-continuo/sdumont/barenn
+B=profiling/v1.4-esparsidade-relu/sdumont/barenn
+reps=20 pin=nenhum data=2026-11-27T13:18:29-03:00 no=sdumont6036
+A: media=0.9748 desvio=0.0070 mediana=0.9728 min=0.9680 max=1.0028 n=20
+B: media=0.7044 desvio=0.0015 mediana=0.7043 min=0.7015 max=0.7080 n=20
+speedup (mediana A/B) = 1.381x   (minimo A/B) = 1.380x
