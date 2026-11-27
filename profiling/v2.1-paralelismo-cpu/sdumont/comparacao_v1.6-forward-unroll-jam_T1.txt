@@ -1,3 +1,6 @@
 A=profiling/v1.6-forward-unroll-jam/sdumont/barenn
 B=profiling/v2.1-paralelismo-cpu/sdumont/barenn
-reps=20 pin=nenhum data=2026-11-27T16:11:37-03:00 no=sdumont6169
+reps=20 pin=nenhum data=2026-11-27T16:20:39-03:00 no=sdumont6169
+A: media=0.5042 desvio=0.0016 mediana=0.5045 min=0.5014 max=0.5069 n=20
+B: media=0.4862 desvio=0.0013 mediana=0.4858 min=0.4845 max=0.4893 n=20
+speedup (mediana A/B) = 1.039x   (minimo A/B) = 1.035x
