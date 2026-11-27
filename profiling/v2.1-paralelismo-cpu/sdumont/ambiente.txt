@@ -1,0 +1,7 @@
+2026-11-27T16:04:48-03:00
+no: sdumont6169
+git: indisponivel neste no
+md5 fonte: 98b2224e6991
+g++ (GCC) 15.2.0
+valgrind-3.19.0
+flags: -O2 -std=c++17  -fopenmp 

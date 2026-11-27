@@ -1,0 +1,3 @@
+A=profiling/v1.6-forward-unroll-jam/sdumont/barenn
+B=profiling/v2.1-paralelismo-cpu/sdumont/barenn
+reps=20 pin=nenhum data=2026-11-27T16:11:37-03:00 no=sdumont6169

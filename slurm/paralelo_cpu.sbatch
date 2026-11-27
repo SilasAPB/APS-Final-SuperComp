@@ -5,7 +5,7 @@
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=24         # AJUSTAR: precisa cobrir o maior T da lista
 #SBATCH --exclusive
-#SBATCH --time=00:30:00
+#SBATCH --time=00:20:00
 #SBATCH --output=slurm/outputs/%x-%j.out
 
 # Curva tempo x numero de threads (OpenMP): compara o binario sequencial (A) com o
