@@ -11,7 +11,7 @@ Tempo de **treino** (3.823 amostras × 51 épocas), no Santos Dumont (SD): CPU X
 | **Baseline Legado** | [`v0.1-baseline`](https://github.com/SilasAPB/APS-Final-SuperComp/tree/v0.1-baseline) | SGD por amostra, 1 thread | 1,2418 s | 1,0× | 95,5 % |
 | **CPU Otimizada** (sequencial) | [`v1.6-forward-unroll-jam`](https://github.com/SilasAPB/APS-Final-SuperComp/tree/v1.6-forward-unroll-jam) | mesmo algoritmo, 1 thread, v1.1 a v1.6 | 0,5031 s | **2,47×** ¹ | 95,5 % (saída idêntica) |
 | **CPU Otimizada** (paralela) | [`v2.3-minibatch-paralelo`](https://github.com/SilasAPB/APS-Final-SuperComp/tree/v2.3-minibatch-paralelo) | mini-batch (B = 64), OpenMP, 16 threads | 0,1380 s | ≈ **9,0×** ² | 96,2 % |
-| **CUDA Inicial** | `v3.1-cuda-inicial` (tag a criar) | mini-batch na V100, 12 kernels por lote, sem otimização | 0,1494 s | ≈ **8,3×** ² | 96,2 % (saída idêntica à da CPU) |
+| **CUDA Inicial** | [`v3.1-cuda-inicial`](https://github.com/SilasAPB/APS-Final-SuperComp/tree/v3.1-cuda-inicial) | mini-batch na V100, 12 kernels por lote, sem otimização | 0,1494 s | ≈ **8,3×** ² | 96,2 % (saída idêntica à da CPU) |
 | **CUDA Otimizado** | — | em andamento | — | — | — |
 
 ¹ Medido no mesmo job, execuções intercaladas contra o baseline (comparação da Issue #11). ² Razão entre tempos medidos em **jobs diferentes** (baseline 1,2418 s); é uma indicação, não uma medida intercalada. A partir do mini-batch (v2.2) o algoritmo muda e o critério de correção passa a ser a acurácia de teste, que não pode ser pior que a do baseline (95,5 %).
@@ -30,7 +30,7 @@ Tempo de **treino** (3.823 amostras × 51 épocas), no Santos Dumont (SD): CPU X
 | v2.1 | OpenMP: neurônios de cada camada entre threads | **hipótese refutada**: eficiência 28 % (2 threads) → 0,8 % (16); sem tag | [#14](https://github.com/SilasAPB/APS-Final-SuperComp/issues/14) | [#15](https://github.com/SilasAPB/APS-Final-SuperComp/pull/15) | — |
 | v2.2 | mini-batch sequencial (B = 64, taxa 0,3) | acurácia 96,2 % (base: 95,5 %); tempo ≈ v1.6 (1,038×) | [#16](https://github.com/SilasAPB/APS-Final-SuperComp/issues/16) | [#17](https://github.com/SilasAPB/APS-Final-SuperComp/pull/17) | [`v2.2-minibatch-sequencial`](https://github.com/SilasAPB/APS-Final-SuperComp/tree/v2.2-minibatch-sequencial) |
 | v2.3 | mini-batch paralelo com OpenMP | **3,4×** (8 threads), **3,6×** (16) sobre a v2.2; satura por custo fixo por lote | [#18](https://github.com/SilasAPB/APS-Final-SuperComp/issues/18) | [#19](https://github.com/SilasAPB/APS-Final-SuperComp/pull/19) | [`v2.3-minibatch-paralelo`](https://github.com/SilasAPB/APS-Final-SuperComp/tree/v2.3-minibatch-paralelo) |
-| v3.1 | porte funcional para CUDA | 0,149 s; saída idêntica à da CPU; kernels minúsculos (36.720) dominam o tempo | [#20](https://github.com/SilasAPB/APS-Final-SuperComp/issues/20) | [#21](https://github.com/SilasAPB/APS-Final-SuperComp/pull/21) | `v3.1-cuda-inicial` (a criar) |
+| v3.1 | porte funcional para CUDA | 0,149 s; saída idêntica à da CPU; kernels minúsculos (36.720) dominam o tempo | [#20](https://github.com/SilasAPB/APS-Final-SuperComp/issues/20) | [#21](https://github.com/SilasAPB/APS-Final-SuperComp/pull/21) | [`v3.1-cuda-inicial`](https://github.com/SilasAPB/APS-Final-SuperComp/tree/v3.1-cuda-inicial) |
 
 ## Principais achados
 
@@ -71,4 +71,24 @@ sbatch slurm/profile_gpu.sbatch barenn.cu <rotulo> 10         # CUDA: tempo, com
 
 ## Estado atual
 
-Concluídos: CPU sequencial otimizada (v1.1 a v1.6), CPU paralela (v2.1 a v2.3) e CUDA inicial (v3.1, falta criar a tag). Em andamento: CUDA otimizado (`gradiente_pesos` responde por 45 % do tempo dos kernels).
+Concluídos: CPU sequencial otimizada (v1.1 a v1.6), CPU paralela (v2.1 a v2.3) e CUDA inicial (v3.1). Em andamento: CUDA otimizado (v3.2, com a Issue já desenhada); `gradiente_pesos` responde por 45 % do tempo dos kernels da v3.1.
+
+## To-dos (GPU): o que não deu tempo de implementar
+
+O trabalho pendente está todo na GPU. Nenhum item abaixo está implementado.
+
+### v3.2: fusão de kernels (próximo bloco, Issue já desenhada)
+
+- [ ] **Reduzir de 12 para 2 kernels por lote.** Na v3.1, cada lote lança 12 kernels minúsculos (36.720 no total, média de 3,5 µs, soma de 127,7 ms ≈ 86 % do treino), e cada um paga o piso de ≈ 1,2 µs mais a ida e a volta dos intermediários pela memória global.
+  - **Kernel 1, um bloco por amostra:** forward das três camadas, perda, gradiente dos escores e deltas das camadas 2 e 1, com somas, ativações e deltas em **memória compartilhada** (`__syncthreads()` entre as camadas); só as ativações, os deltas e a perda por amostra vão para a memória global.
+  - **Kernel 2, uma thread por parâmetro de todas as camadas (2.778):** soma as amostras em ordem e já atualiza o parâmetro, o que é seguro porque o gradiente não usa pesos.
+- [ ] **Previsão:** ≈ 19 µs por lote (contra ≈ 42 µs de kernels hoje), ou ≈ **2,5×** (faixa de 2× a 3×); refutada se o tempo não cair. É uma estimativa feita a partir dos tempos da v3.1, e a cadeia de sincronizações dentro do bloco pode deixar o primeiro kernel mais lento que o previsto.
+- [ ] **Critério:** saída idêntica à da v3.1 e da CPU (cada valor continua sendo calculado por uma thread, na mesma ordem, com `--fmad=false`), determinismo, `compute-sanitizer` sem erros, e Nsight Systems com a contagem de kernels (36.720 → 6.120) e a soma dos tempos.
+- [ ] **Fora do escopo desse bloco, de propósito:** CUDA Graphs, streams, tamanho de bloco e outra forma de somar as amostras, para atribuir o ganho a uma causa só.
+
+### Depois do v3.2
+
+- [ ] **Somar as amostras em paralelo no gradiente:** hoje cada thread percorre as 64 amostras em série (`gradiente_pesos`, 45 % do tempo dos kernels da v3.1); uma redução por bloco ou por warp encurtaria essa cadeia, mudando a ordem das somas (o critério seria a acurácia de teste).
+- [ ] **CUDA Graphs e streams:** esconder o custo de lançamento (3,3 µs por kernel) e sobrepor trabalho; ajuste do tamanho de bloco.
+- [ ] **Métricas do Nsight Compute:** ocupação real e acesso à memória por kernel. No SD os contadores estão bloqueados (`ERR_NVGPUCTRPERM`); alternativas: `sudo ncu` na RTX 3050 local (sinalizando que não é a V100), ocupação teórica via `cudaOccupancyMaxActiveBlocksPerMultiprocessor`, ou pedir a liberação ao LNCC.
+- [ ] **Comparar a GPU com a CPU em nó exclusivo:** a CPU com 16 threads mediu 0,198 s no nó de GPU e 0,138 s no nó exclusivo, então a comparação justa precisa do mesmo tipo de nó.
