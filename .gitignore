@@ -11,3 +11,6 @@ profiling/**/*.nsys-rep
 profiling/**/*.sqlite
 profiling/**/*.qdstrm
 profiling/**/*.ncu-rep
+
+# material de estudo local (nao versionado)
+estudo/
